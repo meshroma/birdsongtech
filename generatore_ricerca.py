@@ -11,7 +11,6 @@ def estrai_dati_e_genera_ricerca():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # Estraiamo tutti i dati utili per la ricerca avanzata
     cursor.execute('''
         SELECT timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, 
                batteria_perc, temperatura, pressione, gps_lat, gps_lon, altitudine_mslm 
@@ -20,26 +19,12 @@ def estrai_dati_e_genera_ricerca():
     rows = cursor.fetchall()
     conn.close()
 
-    # Trasformiamo i record in una lista di dizionari per JavaScript
     rilevamenti_lista = []
     elenco_specie = set()
     elenco_nodi = set()
 
     for r in rows:
-        # r è una tupla: r[0]=timestamp, r[1]=nodo, r[2]=specie_ita, ecc.
-        timestamp = r[0]
-        nodo = r[1]
-        specie_ita = r[2]
-        specie_sci = r[3]
-        score = r[4]
-        audio_url = r[5]
-        batteria = r[6]
-        temperatura = r[7]
-        pressione = r[8]
-        lat = r[9]
-        lon = r[10]
-        altitudine = r[11]
-
+        timestamp, nodo, specie_ita, specie_sci, score, audio_url, batteria, temperatura, pressione, lat, lon, altitudine = r
         elenco_specie.add(specie_ita)
         elenco_nodi.add(nodo)
         
@@ -58,26 +43,51 @@ def estrai_dati_e_genera_ricerca():
             "altitudine": altitudine if altitudine is not None else 0
         })
 
-    # Generazione dei tag select dinamici per i filtri
     opzioni_specie = "".join([f'<option value="{s}">{s}</option>' for s in sorted(elenco_specie)])
     opzioni_nodi = "".join([f'<option value="{n}">{n}</option>' for n in sorted(elenco_nodi)])
 
-    # Template HTML
+    # Template HTML con TAG VISIVI inseriti
     html_content = f"""<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <title>🔎 Motore di Ricerca Bioacustica - Torre Flavia</title>
+    <!-- LINK ALLA FAVICON IN ASSETS -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    
     <style>
-        body {{ font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; padding: 30px; }}
-        h1 {{ color: #00bcd4; border-bottom: 2px solid #2d2d2d; padding-bottom: 10px; }}
-        .filtri-container {{ background: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }}
+        body {{ 
+            font-family: 'Segoe UI', sans-serif; 
+            /* INSERIMENTO SFONDO AMBIENTALE CON FILTRO SCURO DI SICUREZZA */
+            background: linear-gradient(rgba(18, 18, 18, 0.85), rgba(18, 18, 18, 0.95)), url('assets/background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #e0e0e0; 
+            padding: 30px; 
+        }}
+        
+        /* HEADER CON LOGO AFFIANCATO AL TITOLO */
+        .main-header {{
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 2px solid #2d2d2d;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }}
+        .project-logo {{
+            width: 55px;
+            height: 55px;
+            object-fit: contain;
+        }}
+        h1 {{ color: #00bcd4; margin: 0; font-size: 2.2em; }}
+        
+        .filtri-container {{ background: rgba(30, 30, 30, 0.85); padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; backdrop-filter: blur(5px); border: 1px solid #333; }}
         label {{ font-weight: bold; color: #aaa; }}
         select, input {{ background: #2d2d2d; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 1em; }}
-        table {{ width: 100%; border-collapse: collapse; background: #1e1e1e; margin-top: 10px; }}
+        table {{ width: 100%; border-collapse: collapse; background: rgba(30, 30, 30, 0.9); margin-top: 10px; border-radius: 6px; overflow: hidden; }}
         th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #333; }}
         th {{ background: #007c8d; color: white; }}
-        tr:hover {{ background: #252525; }}
+        tr:hover {{ background: rgba(45, 45, 45, 0.8); }}
         .btn-3d {{ background: #00bcd4; color: black; padding: 6px 12px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; }}
         .btn-3d:hover {{ background: #00e5ff; }}
         .counter {{ font-size: 1.1em; color: #8bc34a; font-weight: bold; margin-bottom: 10px; }}
@@ -85,7 +95,11 @@ def estrai_dati_e_genera_ricerca():
 </head>
 <body>
 
-    <h1>🔎 Ricerca Avanzata Rilevamenti Bioacustici</h1>
+    <!-- HEADER STRUTTURATO CON LOGO -->
+    <div class="main-header">
+        <img src="assets/logo.png" alt="Birdsong AI Logo" class="project-logo" onerror="this.style.display='none';">
+        <h1>Ricerca Avanzata Rilevamenti Bioacustici</h1>
+    </div>
     
     <div class="filtri-container">
         <div>
@@ -121,9 +135,7 @@ def estrai_dati_e_genera_ricerca():
                 <th>Azione</th>
             </tr>
         </thead>
-        <tbody id="tabellaRisultati">
-            <!-- I dati verranno iniettati dinamicamente da JS -->
-        </tbody>
+        <tbody id="tabellaRisultati"></tbody>
     </table>
 
     <script>
@@ -137,7 +149,6 @@ def estrai_dati_e_genera_ricerca():
 
             const tbody = document.getElementById("tabellaRisultati");
             tbody.innerHTML = "";
-
             let contatore = 0;
 
             database.forEach(r => {{
@@ -146,7 +157,6 @@ def estrai_dati_e_genera_ricerca():
                 if (r.score < scoreMinimo) return;
 
                 contatore++;
-
                 const link3d = frontendUrl + "?audio=" + r.audio_url + "&specie=" + r.specie_ita + "&meta=" + r.nodo + " (" + r.temperatura + "°C - " + r.altitudine + "m)";
 
                 const row = "<tr>" +
@@ -157,13 +167,10 @@ def estrai_dati_e_genera_ricerca():
                     "<td style='color:#ffa726; font-family:monospace;'>🌡️ " + r.temperatura + "°C<br>🌀 " + r.pressione + " hPa</td>" +
                     "<td><a href='" + link3d + "' target='_blank' class='btn-3d'>Analisi Spaziale 3D 🌐</a></td>" +
                 "</tr>";
-                
                 tbody.innerHTML += row;
             }});
-
             document.getElementById("risultatiCounter").innerText = "Rilevamenti trovati: " + contatore;
         }}
-
         filtraDati();
     </script>
 </body>
@@ -172,7 +179,7 @@ def estrai_dati_e_genera_ricerca():
 
     with open(OUTPUT_HTML, "w", encoding="utf-8") as f:
         f.write(html_content)
-    print(f"🟢 Motore di ricerca generato con successo in: {OUTPUT_HTML}")
+    print(f"🟢 Motore di ricerca aggiornato con alloggiamenti grafici in: {OUTPUT_HTML}")
 
 if __name__ == "__main__":
     estrai_dati_e_genera_ricerca()

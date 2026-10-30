@@ -3,14 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <title>Archivio Ambientale - 30/10/2026</title>
+    <!-- LINK ALLA FAVICON IN ASSETS -->
+    <link rel="icon" type="image/x-icon" href="../../../assets/favicon.ico">
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; padding: 30px; }
-        h1 { color: #4CAF50; border-bottom: 2px solid #2d2d2d; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1e1e1e; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            /* INSERIMENTO SFONDO AMBIENTALE COORDINATO */
+            background: linear-gradient(rgba(18, 18, 18, 0.85), rgba(18, 18, 18, 0.95)), url('../../../assets/background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #e0e0e0; 
+            padding: 30px; 
+        }
+        
+        /* HEADER COORDINATO CON LOGO */
+        .main-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 2px solid #2d2d2d;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .project-logo {
+            width: 55px;
+            height: 55px;
+            object-fit: contain;
+        }
+        h1 { color: #4CAF50; margin: 0; font-size: 2.2em; }
+        
+        table { width: 100%; border-collapse: collapse; background: rgba(30, 30, 30, 0.9); margin-top: 10px; border-radius: 6px; overflow: hidden; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
         th { background: #2e7d32; color: white; }
-        tr:hover { background: #252525; }
+        tr:hover { background: rgba(45, 45, 45, 0.8); }
         .btn-3d { background: #00bcd4; color: black; padding: 6px 12px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; }
+        .btn-3d:hover { background: #00e5ff; }
         .badge { background: #444; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-family: monospace; }
         .bat-ok { color: #8bc34a; }
         .telemetria { color: #ffa726; font-family: monospace; }
@@ -18,7 +45,12 @@
 </head>
 <body>
 
-    <h1>📝 Rilevamenti & Telemetria del 30/10/2026</h1>
+    <!-- HEADER STRUTTURATO CON LOGO -->
+    <div class="main-header">
+        <img src="../../../assets/logo.png" alt="Birdsong AI Logo" class="project-logo" onerror="this.style.display='none';">
+        <h1>📝 Rilevamenti & Telemetria del 30/10/2026</h1>
+    </div>
+    
     <p>Riserva Naturale di Torre Flavia — Rete Stazioni Sensorie Meshtastic</p>
 
     <table>

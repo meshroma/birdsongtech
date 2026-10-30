@@ -3,16 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>🔎 Motore di Ricerca Bioacustica - Torre Flavia</title>
+    <!-- LINK ALLA FAVICON IN ASSETS -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; padding: 30px; }
-        h1 { color: #00bcd4; border-bottom: 2px solid #2d2d2d; padding-bottom: 10px; }
-        .filtri-container { background: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            /* INSERIMENTO SFONDO AMBIENTALE CON FILTRO SCURO DI SICUREZZA */
+            background: linear-gradient(rgba(18, 18, 18, 0.85), rgba(18, 18, 18, 0.95)), url('assets/background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #e0e0e0; 
+            padding: 30px; 
+        }
+        
+        /* HEADER CON LOGO AFFIANCATO AL TITOLO */
+        .main-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 2px solid #2d2d2d;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .project-logo {
+            width: 55px;
+            height: 55px;
+            object-fit: contain;
+        }
+        h1 { color: #00bcd4; margin: 0; font-size: 2.2em; }
+        
+        .filtri-container { background: rgba(30, 30, 30, 0.85); padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; backdrop-filter: blur(5px); border: 1px solid #333; }
         label { font-weight: bold; color: #aaa; }
         select, input { background: #2d2d2d; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 1em; }
-        table { width: 100%; border-collapse: collapse; background: #1e1e1e; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; background: rgba(30, 30, 30, 0.9); margin-top: 10px; border-radius: 6px; overflow: hidden; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
         th { background: #007c8d; color: white; }
-        tr:hover { background: #252525; }
+        tr:hover { background: rgba(45, 45, 45, 0.8); }
         .btn-3d { background: #00bcd4; color: black; padding: 6px 12px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; }
         .btn-3d:hover { background: #00e5ff; }
         .counter { font-size: 1.1em; color: #8bc34a; font-weight: bold; margin-bottom: 10px; }
@@ -20,7 +46,11 @@
 </head>
 <body>
 
-    <h1>🔎 Ricerca Avanzata Rilevamenti Bioacustici</h1>
+    <!-- HEADER STRUTTURATO CON LOGO -->
+    <div class="main-header">
+        <img src="assets/logo.png" alt="Birdsong AI Logo" class="project-logo" onerror="this.style.display='none';">
+        <h1>Ricerca Avanzata Rilevamenti Bioacustici</h1>
+    </div>
     
     <div class="filtri-container">
         <div>
@@ -56,9 +86,7 @@
                 <th>Azione</th>
             </tr>
         </thead>
-        <tbody id="tabellaRisultati">
-            <!-- I dati verranno iniettati dinamicamente da JS -->
-        </tbody>
+        <tbody id="tabellaRisultati"></tbody>
     </table>
 
     <script>
@@ -72,7 +100,6 @@
 
             const tbody = document.getElementById("tabellaRisultati");
             tbody.innerHTML = "";
-
             let contatore = 0;
 
             database.forEach(r => {
@@ -81,7 +108,6 @@
                 if (r.score < scoreMinimo) return;
 
                 contatore++;
-
                 const link3d = frontendUrl + "?audio=" + r.audio_url + "&specie=" + r.specie_ita + "&meta=" + r.nodo + " (" + r.temperatura + "°C - " + r.altitudine + "m)";
 
                 const row = "<tr>" +
@@ -92,13 +118,10 @@
                     "<td style='color:#ffa726; font-family:monospace;'>🌡️ " + r.temperatura + "°C<br>🌀 " + r.pressione + " hPa</td>" +
                     "<td><a href='" + link3d + "' target='_blank' class='btn-3d'>Analisi Spaziale 3D 🌐</a></td>" +
                 "</tr>";
-                
                 tbody.innerHTML += row;
             });
-
             document.getElementById("risultatiCounter").innerText = "Rilevamenti trovati: " + contatore;
         }
-
         filtraDati();
     </script>
 </body>
