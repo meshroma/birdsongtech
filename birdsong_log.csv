@@ -1,0 +1,4 @@
+timestamp,nodo,specie_ita,specie_sci,score_tinyml
+2026-10-30 10:21:00,TORRE_FLAVIA_01,Pettirosso,Erithacus rubecula,0.89
+2026-10-30 11:15:30,TORRE_FLAVIA_01,Martin Pescatore,Alcedo atthis,0.94
+2026-10-30 14:02:15,TORRE_FLAVIA_02,Airone Cenerino,Ardea cinerea,0.76
