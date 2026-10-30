@@ -2,63 +2,67 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Rilevamenti Bioacustici - 30/10/2026</title>
+    <title>Archivio Ambientale - 30/10/2026</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #e0e0e0; padding: 30px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; padding: 30px; }
         h1 { color: #4CAF50; border-bottom: 2px solid #2d2d2d; padding-bottom: 10px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1e1e1e; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
         th { background: #2e7d32; color: white; }
         tr:hover { background: #252525; }
         .btn-3d { background: #00bcd4; color: black; padding: 6px 12px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; }
-        .btn-3d:hover { background: #00e5ff; }
-        .score { font-family: monospace; font-weight: bold; color: #8bc34a; }
+        .badge { background: #444; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-family: monospace; }
+        .bat-ok { color: #8bc34a; }
+        .telemetria { color: #ffa726; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <h1>📝 Rilevamenti del 30/10/2026</h1>
-    <p>Stazione Base: Torre Flavia Mesh Network</p>
+    <h1>📝 Rilevamenti & Telemetria del 30/10/2026</h1>
+    <p>Riserva Naturale di Torre Flavia — Rete Stazioni Sensorie Meshtastic</p>
 
     <table>
         <thead>
             <tr>
                 <th>Orario</th>
-                <th>Nodo di Campo</th>
-                <th>Specie (Volatile)</th>
-                <th>Nome Scientifico</th>
-                <th>Confidenza TinyML</th>
+                <th>Nodo (GPS & Quota)</th>
+                <th>Specie / Sci</th>
+                <th>Confidenza</th>
+                <th>Stato Diagnostico</th>
+                <th>Meteo Locale</th>
                 <th>Analisi Spaziale</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td>14:02:15</td>
-                <td><strong>TORRE_FLAVIA_02</strong></td>
-                <td>Airone Cenerino</td>
-                <td><em>Ardea cinerea</em></td>
-                <td class="score">76.0%</td>
-                <td><a href="http://localhost:8080/index.html?audio=https://tuo-spazio-cloud.local&specie=Airone Cenerino&meta=TORRE_FLAVIA_02" target="_blank" class="btn-3d">Avvia Player 3D 🌐</a></td>
+                <td><strong>TORRE_FLAVIA_02</strong><br><small><a href='https://google.com41.9562,12.0495' target='_blank' style='color:#00bcd4;text-decoration:none;'>📍 41.9562, 12.0495</a> | ⛰️ 8.0 m s.l.m.</small></td>
+                <td>Airone Cenerino<br><small style="color:#aaa;"><em>Ardea cinerea</em></small></td>
+                <td style="color:#8bc34a; font-weight:bold;">76.0%</td>
+                <td><span class="badge"><span class='bat-ok'>🔋 85%</span></span></td>
+                <td class="telemetria">🌡️ 16.8°C<br>🌀 1011.5 hPa</td>
+                <td><a href="http://localhost:8080/index.html?audio=audio/2026-10-30_14-02-15.wav&specie=Airone Cenerino&meta=TORRE_FLAVIA_02 (16.8°C - 1011.5 hPa | ⛰️ 8.0 m s.l.m.)" target="_blank" class="btn-3d">Avvia Player 3D 🌐</a></td>
             </tr>
             <tr>
                 <td>11:15:30</td>
-                <td><strong>TORRE_FLAVIA_01</strong></td>
-                <td>Martin Pescatore</td>
-                <td><em>Alcedo atthis</em></td>
-                <td class="score">94.0%</td>
-                <td><a href="http://localhost:8080/index.html?audio=https://tuo-spazio-cloud.local&specie=Martin Pescatore&meta=TORRE_FLAVIA_01" target="_blank" class="btn-3d">Avvia Player 3D 🌐</a></td>
+                <td><strong>TORRE_FLAVIA_01</strong><br><small><a href='https://google.com41.9548,12.0461' target='_blank' style='color:#00bcd4;text-decoration:none;'>📍 41.9548, 12.0461</a> | ⛰️ 2.5 m s.l.m.</small></td>
+                <td>Martin Pescatore<br><small style="color:#aaa;"><em>Alcedo atthis</em></small></td>
+                <td style="color:#8bc34a; font-weight:bold;">94.0%</td>
+                <td><span class="badge"><span class='bat-ok'>🔋 91%</span></span></td>
+                <td class="telemetria">🌡️ 15.2°C<br>🌀 1012.8 hPa</td>
+                <td><a href="http://localhost:8080/index.html?audio=audio/2026-10-30_11-15-30.wav&specie=Martin Pescatore&meta=TORRE_FLAVIA_01 (15.2°C - 1012.8 hPa | ⛰️ 2.5 m s.l.m.)" target="_blank" class="btn-3d">Avvia Player 3D 🌐</a></td>
             </tr>
             <tr>
                 <td>10:21:00</td>
-                <td><strong>TORRE_FLAVIA_01</strong></td>
-                <td>Pettirosso</td>
-                <td><em>Erithacus rubecula</em></td>
-                <td class="score">89.0%</td>
-                <td><a href="http://localhost:8080/index.html?audio=https://tuo-spazio-cloud.local&specie=Pettirosso&meta=TORRE_FLAVIA_01" target="_blank" class="btn-3d">Avvia Player 3D 🌐</a></td>
+                <td><strong>TORRE_FLAVIA_01</strong><br><small><a href='https://google.com41.9548,12.0461' target='_blank' style='color:#00bcd4;text-decoration:none;'>📍 41.9548, 12.0461</a> | ⛰️ 2.5 m s.l.m.</small></td>
+                <td>Pettirosso<br><small style="color:#aaa;"><em>Erithacus rubecula</em></small></td>
+                <td style="color:#8bc34a; font-weight:bold;">89.0%</td>
+                <td><span class="badge"><span class='bat-ok'>🔋 92%</span></span></td>
+                <td class="telemetria">🌡️ 14.5°C<br>🌀 1013.2 hPa</td>
+                <td><a href="http://localhost:8080/index.html?audio=audio/2026-10-30_10-21-00.wav&specie=Pettirosso&meta=TORRE_FLAVIA_01 (14.5°C - 1013.2 hPa | ⛰️ 2.5 m s.l.m.)" target="_blank" class="btn-3d">Avvia Player 3D 🌐</a></td>
             </tr>
         </tbody>
     </table>
-    
-    <br><a href="../../../" style="color: #aaa; text-decoration: none;">← Torna alla Home dell'Archivio</a>
+    <br><a href="../../../" style="color: #aaa; text-decoration: none;">← Torna all'Indice Generale</a>
 </body>
 </html>
