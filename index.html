@@ -33,7 +33,7 @@
 <button id="ssbtn">➧ PLAY</button>
 <div id="blabel"><div class="bn" id="bname"></div><div class="bs" id="bsci"></div></div>
 <div id="fscale"><div id="cbar"></div><div id="flabels"></div></div>
-<div id="hint"><p>Attendo i parametri dall'URL</p><p>es. index.html?audio=file.wav&specie=Pettirosso</p></div>
+<div id="hint"><p>Configura i parametri di tracciamento</p></div>
 
 <script src="https://cloudflare.com"></script>
 <script src="https://jsdelivr.net"></script>
@@ -80,16 +80,15 @@ window.addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight);
 
 const grp=new THREE.Group(); 
 scene.add(grp);
-// Generazione Assi e Griglia delle Frequenze
+// Generazione Assi e Scala Frequenze Logaritmiche
 (function(){ 
     let v=[],c=[]; 
     function seg(ax,ay,az,bx,by,bz,r,g,b){ v.push(ax,ay,az,bx,by,bz); c.push(r,g,b,r,g,b); } 
     seg(0,-2.5,0,0,2.5,0,.15,.45,.50); 
     seg(-2.5,0,0,2.5,0,0,.18,.18,.18); 
     seg(0,0,-2.5,0,0,2.5,.15,.15,.15); 
-    
-    const scaleHz =;
-    scaleHz.forEach(hz=>{ 
+
+    [ 400, 1000, 2000, 4000, 8000, 12000 ].forEach(hz=>{ 
         const y=fToY(hz),col=fToCol(hz); 
         seg(-.12,y,0,.12,y,0,col.r,col.g,col.b); 
     }); 
@@ -105,7 +104,7 @@ AAx.forEach(({axid,t})=>{ const el=document.createElement('div'); el.id=axid; el
 const _v3=new THREE.Vector3(); 
 function projectAxLabels(){ AAx.forEach(({axid,p})=>{ _v3.copy(p).applyMatrix4(grp.matrixWorld).project(camera); const el=document.getElementById(axid); if(!el) return; el.style.left=((_v3.x+1)/2*innerWidth)+'px'; el.style.top=((-_v3.y+1)/2*innerHeight)+'px'; el.style.opacity=_v3.z<.99?'1':'0'; }); } 
 
-// Struttura Particelle (Points) con Shader Fluorescente
+// Struttura Particelle (Points) con Shader Fluorescente Potenziato per Effetto Neon Incandescente
 const posA=new Float32Array(MAX_POINTS*3),colA=new Float32Array(MAX_POINTS*3),sizeA=new Float32Array(MAX_POINTS).fill(1); 
 const ptGeo=new THREE.BufferGeometry(); 
 const pPA=new THREE.BufferAttribute(posA,3),pCA=new THREE.BufferAttribute(colA,3),pSA=new THREE.BufferAttribute(sizeA,1); 
@@ -160,6 +159,7 @@ function sampleFFT(){
             spawnPoint(hz,v/255); 
         } 
     } else if(audioEl && !audioEl.paused) {
+        // Forza l'attivazione dei punti neon simulando lo spettro se l'AudioContext locale è bloccato
         for(let k=0;k<3;k++){
             if(Math.random()>0.3){
                 const hzSimulata=Math.floor(Math.random()*(8000-2000))+2000;
