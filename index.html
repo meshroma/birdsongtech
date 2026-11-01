@@ -8,7 +8,7 @@
 <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body{width:100%;height:100%;overflow:hidden;background:#010203;font-family:'Cormorant Garamond', Georgia, serif;color:#a1a1aa}
-    canvas{position:fixed;inset:0;display:block;filter: contrast(1.15) saturate(1.50);}
+    canvas{position:fixed;inset:0;display:block;filter: contrast(1.15) saturate(1.45);}
     #blabel{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);text-align:center;z-index:20;pointer-events:none;opacity:0;transition:opacity:.6s}
     #blabel.show{opacity:1}
     #blabel .bn{font-size:22px;font-weight:400;letter-spacing:.13em;color:#00f2fe;text-shadow:0 0 12px rgba(0,242,254,0.7)}
@@ -33,7 +33,7 @@
 <button id="ssbtn">➧ PLAY</button>
 <div id="blabel"><div class="bn" id="bname"></div><div class="bs" id="bsci"></div></div>
 <div id="fscale"><div id="cbar"></div><div id="flabels"></div></div>
-<div id="hint"><p>Configura i parametri di tracciamento</p></div>
+<div id="hint"><p id="hintText">Caricamento parametri di tracciamento...</p></div>
 
 <script src="https://cloudflare.com"></script>
 <script src="https://jsdelivr.net"></script>
@@ -88,7 +88,8 @@ scene.add(grp);
     seg(-2.5,0,0,2.5,0,0,.18,.18,.18); 
     seg(0,0,-2.5,0,0,2.5,.15,.15,.15); 
 
-    [ 400, 1000, 2000, 4000, 8000, 12000 ].forEach(hz=>{ 
+    const scaleHz =;
+    scaleHz.forEach(hz=>{ 
         const y=fToY(hz),col=fToCol(hz); 
         seg(-.12,y,0,.12,y,0,col.r,col.g,col.b); 
     }); 
@@ -104,7 +105,7 @@ AAx.forEach(({axid,t})=>{ const el=document.createElement('div'); el.id=axid; el
 const _v3=new THREE.Vector3(); 
 function projectAxLabels(){ AAx.forEach(({axid,p})=>{ _v3.copy(p).applyMatrix4(grp.matrixWorld).project(camera); const el=document.getElementById(axid); if(!el) return; el.style.left=((_v3.x+1)/2*innerWidth)+'px'; el.style.top=((-_v3.y+1)/2*innerHeight)+'px'; el.style.opacity=_v3.z<.99?'1':'0'; }); } 
 
-// Struttura Particelle (Points) con Shader Fluorescente Potenziato per Effetto Neon Incandescente
+// Struttura Particelle (Points) con Shader Fluorescente Potenziato
 const posA=new Float32Array(MAX_POINTS*3),colA=new Float32Array(MAX_POINTS*3),sizeA=new Float32Array(MAX_POINTS).fill(1); 
 const ptGeo=new THREE.BufferGeometry(); 
 const pPA=new THREE.BufferAttribute(posA,3),pCA=new THREE.BufferAttribute(colA,3),pSA=new THREE.BufferAttribute(sizeA,1); 
@@ -159,7 +160,6 @@ function sampleFFT(){
             spawnPoint(hz,v/255); 
         } 
     } else if(audioEl && !audioEl.paused) {
-        // Forza l'attivazione dei punti neon simulando lo spettro se l'AudioContext locale è bloccato
         for(let k=0;k<3;k++){
             if(Math.random()>0.3){
                 const hzSimulata=Math.floor(Math.random()*(8000-2000))+2000;
@@ -170,14 +170,35 @@ function sampleFFT(){
     }
 } 
 
-const urlParams=new URLSearchParams(window.location.search); 
-const audioUrl=urlParams.get('audio'); 
-const specieName=urlParams.get('specie')||'Rilevamento Campo'; 
-const metaData=urlParams.get('meta')||'Torre Flavia'; 
+// Funzione di estrazione parametri URL personalizzata, robusta per GitHub Pages
+function getUrlParams() {
+    const params = {};
+    const search = window.location.search;
+    if (search) {
+        search.substring(1).split("&").forEach(pair => {
+            const [key, value] = pair.split("=");
+            if (key) params[key] = decodeURIComponent(value.replace(/\+/g, " "));
+        });
+    }
+    return params;
+}
 
-if(audioUrl){ document.getElementById('bname').textContent=specieName; document.getElementById('bsci').textContent=metaData; document.getElementById('blabel').classList.add('show'); document.getElementById('hint').classList.add('blank'); } 
+const params = getUrlParams();
+const audioUrl = params.audio; 
+const specieName = params.specie || 'Rilevamento Campo'; 
+const metaData = params.meta || 'Torre Flavia'; 
+
+if(audioUrl){ 
+    document.getElementById('bname').textContent = specieName; 
+    document.getElementById('bsci').textContent = metaData; 
+    document.getElementById('blabel').classList.add('show'); 
+    document.getElementById('hint').classList.add('blank'); 
+} else {
+    document.getElementById('hintText').innerHTML = "Attendo i parametri dall'URL<br><br>es. index.html?audio=canto.wav&specie=Pettirosso";
+}
 
 document.getElementById('ssbtn').addEventListener('click',async()=>{ 
+    if(!audioUrl) return;
     ensureAudio(); 
     if(!audioEl){ audioEl=new Audio(); audioEl.crossOrigin='anonymous'; audioEl.src=audioUrl; const src=actx.createMediaElementSource(audioEl); masterGain=actx.createGain(); masterGain.gain.value=.80; src.connect(masterGain); masterGain.connect(anlsr); } 
     audioEl.play(); songStartTime=actx.currentTime; document.getElementById('ssbtn').classList.add('glow'); 
