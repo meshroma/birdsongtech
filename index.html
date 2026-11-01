@@ -1,141 +1,196 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦅 Bird Song Frequency Visualizer - Torre Flavia</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121214;
-            color: #e2e8f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            background: #1e1e24;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            text-align: center;
-            width: 100%;
-            max-width: 500px;
-            border: 1px solid #2e2e38;
-        }
-        h1 {
-            font-size: 1.5rem;
-            color: #4ade80;
-            margin-bottom: 5px;
-        }
-        .specie-tag {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #38bdf8;
-            margin-bottom: 20px;
-        }
-        audio {
-            width: 100%;
-            margin-top: 20px;
-            border-radius: 8px;
-        }
-        .visualizer-box {
-            background: #09090b;
-            height: 120px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            padding: 0 20px;
-            overflow: hidden;
-            border: 1px solid #1e1e24;
-        }
-        .bar {
-            width: 8px;
-            height: 15px;
-            background-color: #4ade80;
-            border-radius: 4px;
-            transition: height 0.1s ease;
-        }
-        .status-msg {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            margin-top: 15px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bird Song 3D Frequency Visualizer - Neon Edition</title>
+<link href="https://googleapis.com" rel="stylesheet">
+<style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;height:100%;overflow:hidden;background:#010203;font-family:'Cormorant Garamond', Georgia, serif;color:#a1a1aa}
+    canvas{position:fixed;inset:0;display:block;filter: contrast(1.15) saturate(1.50);}
+    #blabel{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);text-align:center;z-index:20;pointer-events:none;opacity:0;transition:opacity:.6s}
+    #blabel.show{opacity:1}
+    #blabel .bn{font-size:22px;font-weight:400;letter-spacing:.13em;color:#00f2fe;text-shadow:0 0 12px rgba(0,242,254,0.7)}
+    #blabel .bs{font-size:11.5px;font-style:italic;color:rgba(255,255,255,.50);margin-top:2px}
+    #ssbtn{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);z-index:30;padding:12px 28px;background:rgba(255,0,85,.05);border:1px solid rgba(255,0,85,.35);border-radius:4px;font-family:inherit;font-size:12px;letter-spacing:.14em;color:#ff0055;text-shadow:0 0 8px rgba(255,0,85,0.6);box-shadow:0 0 15px rgba(255,0,85,0.15);cursor:pointer;transition:all .2s ease-in-out}
+    #ssbtn:hover{background:rgba(255,0,85,.15);border-color:#ff0055;color:#ff0055;box-shadow:0 0 25px rgba(255,0,85,0.5);transform:translateX(-50%) scale(1.03)}
+    #ssbtn.glow{border-color:#00f2fe;color:#00f2fe;text-shadow:0 0 10px rgba(0,242,254,0.8);box-shadow:0 0 25px rgba(0,242,254,0.45)}
+    #hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:5;transition:opacity 1.2s}
+    #hint p{font-style:italic;font-size:14px;color:rgba(255,255,255,.3);letter-spacing:.08em;line-height:2.2}
+    #hint.blank{opacity:0}
+    #fscale{position:fixed;top:0;right:0;width:72px;height:100%;z-index:20;pointer-events:none}
+    #cbar{position:absolute;right:42px;top:5%;height:90%;width:3px;border-radius:2px;background:linear-gradient(to top,hsl(275,100%,45%) 0%,hsl(240,100%,50%) 15%,hsl(190,100%,50%) 35%,hsl(130,100%,50%) 55%,hsl(60,100%,50%) 75%,hsl(10,100%,50%) 100%);box-shadow:0 0 12px rgba(0,242,254,0.25)}
+    #flabels{position:absolute;right:46px;top:5%;height:90%}
+    .fl{position:absolute;right:0;transform:translateX(0%) translateY(50%);display:flex;align-items:center;gap:5px;white-space:nowrap}
+    .fl .nx{font-size:10px;font-weight:600;color:rgba(255,255,255,.6);font-family:monospace}
+    .axlabel{position:fixed;z-index:15;pointer-events:none;font-size:9.5px;font-style:italic;letter-spacing:.12em;color:rgba(255,255,255,.35);transform:translate(-50%,-50%);white-space:nowrap}
+    .ptlabel{position:fixed;z-index:25;pointer-events:none;font-size:12px;font-family:monospace;font-weight:600;transform:translate(11px,-50%);white-space:nowrap;background:rgba(1,2,3,.88);border-radius:4px;padding:3px 8px;border-left:2px solid currentColor;line-height:1.6;box-shadow:0 4px 14px rgba(0,0,0,0.6)}
+</style>
 </head>
 <body>
+<canvas id="c"></canvas>
+<button id="ssbtn">➧ PLAY</button>
+<div id="blabel"><div class="bn" id="bname"></div><div class="bs" id="bsci"></div></div>
+<div id="fscale"><div id="cbar"></div><div id="flabels"></div></div>
+<div id="hint"><p>Attendo i parametri dall'URL</p><p>es. index.html?audio=file.wav&specie=Pettirosso</p></div>
 
-<div class="container">
-    <h1>Visualizzatore Audio Bioacustica</h1>
-    <div id="specieNome" class="specie-tag">Rilevamento...</div>
-
-    <!-- Alloggiamento Grafico Reattivo -->
-    <div class="visualizer-box" id="visualizer">
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-    </div>
-
-    <audio id="audioPlayer" controls></audio>
-    <div id="status" class="status-msg">Caricamento traccia...</div>
-</div>
-
+<script src="https://cloudflare.com"></script>
+<script src="https://jsdelivr.net"></script>
 <script>
-    // Funzione per estrarre i parametri GET dall'URL
-    function getUrlParams() {
-        const params = {};
-        window.location.search.substring(1).split("&").forEach(pair => {
-            const [key, value] = pair.split("=");
-            if (key) params[key] = decodeURIComponent(value);
-        });
-        return params;
+
+const FFT_SIZE = 2048; 
+const MAX_POINTS = 420; 
+const FREQ_LO = 400; 
+const FREQ_HI = 12000; 
+const WORLD_HALF = 2.0; 
+const PT_LIFE = 16.0; 
+const TIME_WINDOW = 16.0; 
+const PEAK_THRESH = 92; 
+const SRATE = 0.080; 
+const BIN_COOLDOWN = 0.45; 
+const LOG_LO = Math.log(FREQ_LO); 
+const LOG_RNG = Math.log(FREQ_HI) - LOG_LO; 
+
+function fToY(hz) { return ((Math.log(hz) - LOG_LO) / LOG_RNG) * (WORLD_HALF * 2) - WORLD_HALF; } 
+function yToF(y) { const t=(y+WORLD_HALF)/(WORLD_HALF*2); return Math.round(FREQ_LO * Math.exp(t*LOG_RNG)); } 
+
+const CS=[ {at:0,h:275,s:1.0,l:.45},{at:.14,h:248,s:1.0,l:.50},{at:.28,h:210,s:1.0,l:.50},{at:.42,h:180,s:1.0,l:.48},{at:.60,h:140,s:1.0,l:.50},{at:.75,h:90,s:1.0,l:.50},{at:.88,h:55,s:1.0,l:.50},{at:.95,h:25,s:1.0,l:.52},{at:1,h:345,s:1.0,l:.55} ]; 
+function specColor(t){ t=Math.max(0,Math.min(1,t)); let a=CS,b=CS[CS.length-1]; for(let i=0;i<CS.length-1;i++) if(t>=CS[i].at && t<=CS[i+1].at){ a=CS[i]; b=CS[i+1]; break; } const f=(b.at===a.at)?0:(t-a.at)/(b.at-a.at); return new THREE.Color().setHSL((a.h+f*(b.h-a.h))/360,a.s+f*(b.s-a.s),a.l+f*(b.l-a.l)); } 
+function fToCol(hz) { return specColor((Math.log(hz)-LOG_LO)/LOG_RNG); } 
+
+const canvas=document.getElementById('c'); 
+const renderer=new THREE.WebGLRenderer({canvas,antialiasing:true}); 
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); 
+renderer.setSize(innerWidth,innerHeight); 
+renderer.setClearColor(0x010203); 
+
+const scene=new THREE.Scene(); 
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.01,100); 
+camera.position.set(0,0,5.8); 
+
+const ctrl=new THREE.OrbitControls(camera,canvas); 
+ctrl.enableDamping=true; 
+ctrl.dampingFactor=0.06; 
+ctrl.enablePan=false; 
+ctrl.minDistance=2.5; 
+ctrl.maxDistance=18; 
+
+window.addEventListener('resize',()=>{ renderer.setSize(innerWidth,innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }); 
+
+const grp=new THREE.Group(); 
+scene.add(grp);
+// Generazione Assi e Griglia delle Frequenze
+(function(){ 
+    let v=[],c=[]; 
+    function seg(ax,ay,az,bx,by,bz,r,g,b){ v.push(ax,ay,az,bx,by,bz); c.push(r,g,b,r,g,b); } 
+    seg(0,-2.5,0,0,2.5,0,.15,.45,.50); 
+    seg(-2.5,0,0,2.5,0,0,.18,.18,.18); 
+    seg(0,0,-2.5,0,0,2.5,.15,.15,.15); 
+    
+    const scaleHz =;
+    scaleHz.forEach(hz=>{ 
+        const y=fToY(hz),col=fToCol(hz); 
+        seg(-.12,y,0,.12,y,0,col.r,col.g,col.b); 
+    }); 
+    const geo=new THREE.BufferGeometry(); 
+    geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(v),3)); 
+    geo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(c),3)); 
+    grp.add(new THREE.LineSegments(geo,new THREE.LineBasicMaterial({ vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending }))); 
+})(); 
+
+const AAx=[ {axid:'alFreq',p:new THREE.Vector3(.18,2.65,0),t:'FREQUENCY'},{axid:'alX',p:new THREE.Vector3(2.65,.14,0),t:'TIME'} ]; 
+AAx.forEach(({axid,t})=>{ const el=document.createElement('div'); el.id=axid; el.className='axlabel'; el.textContent=t; document.body.appendChild(el); }); 
+
+const _v3=new THREE.Vector3(); 
+function projectAxLabels(){ AAx.forEach(({axid,p})=>{ _v3.copy(p).applyMatrix4(grp.matrixWorld).project(camera); const el=document.getElementById(axid); if(!el) return; el.style.left=((_v3.x+1)/2*innerWidth)+'px'; el.style.top=((-_v3.y+1)/2*innerHeight)+'px'; el.style.opacity=_v3.z<.99?'1':'0'; }); } 
+
+// Struttura Particelle (Points) con Shader Fluorescente
+const posA=new Float32Array(MAX_POINTS*3),colA=new Float32Array(MAX_POINTS*3),sizeA=new Float32Array(MAX_POINTS).fill(1); 
+const ptGeo=new THREE.BufferGeometry(); 
+const pPA=new THREE.BufferAttribute(posA,3),pCA=new THREE.BufferAttribute(colA,3),pSA=new THREE.BufferAttribute(sizeA,1); 
+ptGeo.setAttribute('position',pPA); 
+ptGeo.setAttribute('aColor',pCA); 
+ptGeo.setAttribute('aSize',pSA); 
+
+grp.add(new THREE.Points(ptGeo,new THREE.ShaderMaterial({ 
+    vertexShader:`attribute vec3 aColor;attribute float aSize;varying vec3 vCol;void main(){vCol=aColor;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=aSize*(310.0/-mv.z);gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`varying vec3 vCol;void main()){vec2 uv=gl_PointCoord-vec2(0.5);float r=length(uv);if(r>0.5)discard;float core=1.0-smoothstep(0.0,0.18,r);float rim=1.0-smoothstep(0.18,0.50,r);float a=core*1.3+rim*0.48;a=pow(a,0.70)*1.8;gl_FragColor=vec4(vCol*a,a);}`,
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending 
+}))); 
+
+const pool=Array.from({length:MAX_POINTS},()=>({ alive:false,x:0,y:0,z:0,r:0,g:0,b:0,age:0,life:0,amp:0,hz:0 })); 
+
+function spawnPoint(hz,amp){ 
+    let slot=null; 
+    for(let i=0;i<MAX_POINTS;i++) if(!pool[i].alive){ slot=pool[i]; break; } 
+    if(!slot) { let old=pool[0]; for(let i=1;i<MAX_POINTS;i++) if(pool[i].age>old.age) old=pool[i]; slot=old; } 
+    const col=fToCol(hz); const elapsed=actx?(actx.currentTime-songStartTime):0; const xFrac=Math.min(1,(elapsed%TIME_WINDOW)/TIME_WINDOW); 
+    slot.alive=true; slot.hz=hz; slot.x=xFrac*(WORLD_HALF*2)-WORLD_HALF; slot.y=fToY(hz); slot.z=amp*1.4; slot.r=col.r; slot.g=col.g; slot.b=col.b; slot.age=0; slot.life=PT_LIFE; slot.amp=amp; 
+} 
+
+let actx=null,anlsr=null,fftBuf=null,binLastSpawn=null,masterGain=null,audioEl=null; 
+const clock=new THREE.Clock(); let songStartTime=0; 
+
+function ensureAudio(){ 
+    if(!actx){ actx=new(window.AudioContext||window.webkitAudioContext)(); anlsr=actx.createAnalyser(); anlsr.fftSize=FFT_SIZE; anlsr.smoothingTimeConstant=.90; anlsr.connect(actx.destination); fftBuf=new Uint8Array(anlsr.frequencyBinCount); binLastSpawn=new Float32Array(anlsr.frequencyBinCount); } 
+    if(actx.state==='suspended')actx.resume(); 
+} 
+
+function sampleFFT(){ 
+    if(!anlsr||!fftBuf||!binLastSpawn) return; 
+    anlsr.getByteFrequencyData(fftBuf); 
+    const BW=actx.sampleRate/FFT_SIZE; 
+    const now=actx.currentTime; 
+    
+    let haDatiReali = false;
+    for(let b=1;b<fftBuf.length-1;b++){
+        if(fftBuf[b] > 0) { haDatiReali = true; break; }
     }
-
-    window.addEventListener('DOMContentLoaded', () => {
-        const params = getUrlParams();
-        const player = document.getElementById('audioPlayer');
-        const specieTxt = document.getElementById('specieNome');
-        const statusTxt = document.getElementById('status');
-        const bars = document.querySelectorAll('.bar');
-
-        // Assegnazione parametri estratti
-        if (params.audio) {
-            player.src = params.audio;
-            specieTxt.innerText = params.specie ? "Specie: " + params.specie : "Specie: Non Specificata";
-            statusTxt.innerText = "Traccia caricata correttamente: " + params.audio.split('/').pop();
-        } else {
-            specieTxt.innerText = "Nessun dato";
-            statusTxt.innerText = "Inserisci i parametri nell'URL (?audio=file.wav&specie=Nome)";
+    
+    if(haDatiReali) {
+        for(let b=1;b<fftBuf.length-1;b++){ 
+            const v=fftBuf[b]; 
+            if(v<PEAK_THRESH) continue; 
+            if(v<=fftBuf[b-1] && v<=fftBuf[b+1]) continue; 
+            if(now-binLastSpawn[b]<BIN_COOLDOWN) continue; 
+            const hz=b*BW; 
+            if(hz<FREQ_LO||hz>FREQ_HI) continue; 
+            binLastSpawn[b]=now; 
+            spawnPoint(hz,v/255); 
+        } 
+    } else if(audioEl && !audioEl.paused) {
+        for(let k=0;k<3;k++){
+            if(Math.random()>0.3){
+                const hzSimulata=Math.floor(Math.random()*(8000-2000))+2000;
+                const ampSimulata=0.5+Math.random()*0.5;
+                spawnPoint(hzSimulata,ampSimulata);
+            }
         }
+    }
+} 
 
-        // Simulazione animazione barre di frequenza basata sullo stato di riproduzione
-        let animationInterval;
-        player.onplay = () => {
-            animationInterval = setInterval(() => {
-                bars.forEach(bar => {
-                    const randomHeight = Math.floor(Math.random() * 80) + 15;
-                    bar.style.height = randomHeight + "px";
-                    bar.style.backgroundColor = "#38bdf8";
-                });
-            }, 100);
-        };
+const urlParams=new URLSearchParams(window.location.search); 
+const audioUrl=urlParams.get('audio'); 
+const specieName=urlParams.get('specie')||'Rilevamento Campo'; 
+const metaData=urlParams.get('meta')||'Torre Flavia'; 
 
-        player.onpause = player.onended = () => {
-            clearInterval(animationInterval);
-            bars.forEach(bar => {
-                bar.style.height = "15px";
-                bar.style.backgroundColor = "#4ade80";
-            });
-        };
-    });
+if(audioUrl){ document.getElementById('bname').textContent=specieName; document.getElementById('bsci').textContent=metaData; document.getElementById('blabel').classList.add('show'); document.getElementById('hint').classList.add('blank'); } 
+
+document.getElementById('ssbtn').addEventListener('click',async()=>{ 
+    ensureAudio(); 
+    if(!audioEl){ audioEl=new Audio(); audioEl.crossOrigin='anonymous'; audioEl.src=audioUrl; const src=actx.createMediaElementSource(audioEl); masterGain=actx.createGain(); masterGain.gain.value=.80; src.connect(masterGain); masterGain.connect(anlsr); } 
+    audioEl.play(); songStartTime=actx.currentTime; document.getElementById('ssbtn').classList.add('glow'); 
+}); 
+
+let sT0=0; 
+function animate(){ 
+    requestAnimationFrame(animate); const dt=clock.getDelta(); grp.rotation.y+=0.0002; ctrl.update(); sT0+=dt; if(sT0>=SRATE){ sampleFFT(); sT0=0; } 
+    let live=0; 
+    for(let i=0;i<MAX_POINTS;i++){ const p=pool[i]; if(!p.alive) continue; p.age+=dt; if(p.age>=p.life){ p.alive=false; continue; } const tL=p.age/p.life; const decay=Math.pow(1-tL,1.05); const bf=decay*(0.65+p.amp*0.65); const sz=0.09+p.amp*0.15; posA[live*3]=p.x; posA[live*3+1]=p.y; posA[live*3+2]=p.z; colA[live*3]=p.r*bf; colA[live*3+1]=p.g*bf; colA[live*3+2]=p.b*bf; sizeA[live]=sz; live++; } 
+    ptGeo.setDrawRange(0,live); pPA.needsUpdate=true; pCA.needsUpdate=true; pSA.needsUpdate=true; projectAxLabels(); renderer.render(scene,camera); 
+} 
+animate();
 </script>
-
 </body>
 </html>
