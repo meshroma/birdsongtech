@@ -10,7 +10,9 @@ Backend Jamstack e Dashboard 3D per il monitoraggio bioacustico automatizzato de
 * **Spettrogramma 3D Neon:** Analizzatore di frequenza bioacustica tridimensionale ad alta brillantezza con shader fluorescenti ed elaborazione FFT logaritmica.
 
 ## 🔗 Collegamenti Rapidi
-* 📍 **Dashboard e Mappa Live:** [Apri la Dashboard](https://github.io/birdsongtech/ricerca.html)
-* 🦅 **Visualizzatore 3D (Esempio Pettirosso):** [Apri il Visualizzatore 3D](https://github.io/birdsongtech/index.html?audio=canto.wav&specie=Pettirosso)
+* 📍 **Dashboard e Mappa Live**
+https://meshroma.github.io/birdsongtech/ricerca.html
+* 🦅 **Visualizzatore 3D (Esempio Pettirosso)**
+https://meshroma.github.io/birdsongtech/index.html?audio=canto.wav&specie=Pettirosso
 
 
