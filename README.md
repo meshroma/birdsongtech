@@ -11,12 +11,12 @@ Backend Jamstack e Dashboard 3D per il monitoraggio bioacustico automatizzato de
 
 ## 🔗 Collegamenti Rapidi
 * 📍 **Dashboard e Mappa Live**
-https://meshroma.github.io/birdsongtech/ricerca.html
+
 * 🦅 **Visualizzatore 3D (Esempio Pettirosso)**
-https://meshroma.github.io/birdsongtech/index.html?audio=./canto.wav&specie=Pettirosso&meta=Nodo1
 
 
 
 
-Rilascio Cloud completato con successo
+
+
 
