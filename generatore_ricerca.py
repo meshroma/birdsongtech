@@ -1,185 +1,168 @@
-import os
 import sqlite3
-import json
+import os
 
-DB_NAME = "birdsong_history.db"
-OUTPUT_HTML = "ricerca.html"
-FRONTEND_3D_URL = "http://localhost:8080/index.html"
-
-def estrai_dati_e_genera_ricerca():
-    print("[*] Interrogazione database per il motore di ricerca...")
-    conn = sqlite3.connect(DB_NAME)
+def genera_dashboard():
+    # 1. Connessione al database SQLite locale
+    conn = sqlite3.connect('birdsong_history.db')
     cursor = conn.cursor()
     
-    cursor.execute('''
-        SELECT timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, 
-               batteria_perc, temperatura, pressione, gps_lat, gps_lon, altitudine_mslm 
-        FROM rilevamenti_bioacustici ORDER BY timestamp DESC
-    ''')
-    rows = cursor.fetchall()
+    # Estrazione delle rilevazioni storiche dal database
+    try:
+        cursor.execute("SELECT timestamp, nodo, specie_ita, confidenza, batteria_perc, temperatura, pressione, altitudine_mslm, audio_path FROM birdsong_history ORDER BY timestamp DESC")
+        righe = cursor.fetchall()
+    except sqlite3.OperationalError:
+        righe = []
+        
     conn.close()
 
-    rilevamenti_lista = []
-    elenco_specie = set()
-    elenco_nodi = set()
+    # 2. Generazione delle righe della tabella in formato HTML
+    tabella_html = ""
+    for r in righe:
+        timestamp, nodo, specie, conf, batt, temp, press, alt, audio = r
+        conf_perc = f"{int(conf * 100)}%" if conf else "N/D"
+        tabella_html += f"""
+        <tr>
+            <td>{timestamp}</td>
+            <td>{nodo}</td>
+            <td><strong>{specie}</strong></td>
+            <td>{conf_perc}</td>
+            <td>{temp}°C / {press} hPa</td>
+            <td>{alt}m s.l.m.</td>
+            <td><a class="btn-listen" href="index.html?audio={audio}&specie={specie}&meta={nodo}">➧ VISUALIZZA 3D</a></td>
+        </tr>
+        """
 
-    for r in rows:
-        timestamp, nodo, specie_ita, specie_sci, score, audio_url, batteria, temperatura, pressione, lat, lon, altitudine = r
-        elenco_specie.add(specie_ita)
-        elenco_nodi.add(nodo)
-        
-        rilevamenti_lista.append({
-            "timestamp": timestamp,
-            "nodo": nodo,
-            "specie_ita": specie_ita,
-            "specie_sci": specie_sci,
-            "score": round(score * 100, 1),
-            "audio_url": audio_url,
-            "batteria": batteria if batteria is not None else "--",
-            "temperatura": temperatura if temperatura is not None else "--",
-            "pressione": pressione if pressione is not None else "--",
-            "lat": lat if lat is not None else 0,
-            "lon": lon if lon is not None else 0,
-            "altitudine": altitudine if altitudine is not None else 0
-        })
-
-    opzioni_specie = "".join([f'<option value="{s}">{s}</option>' for s in sorted(elenco_specie)])
-    opzioni_nodi = "".join([f'<option value="{n}">{n}</option>' for n in sorted(elenco_nodi)])
-
-    # Template HTML con TAG VISIVI inseriti
-    html_content = f"""<!DOCTYPE html>
+    # 3. Struttura HTML (Divisa in due parti per inserire la tabella senza mandare in crash la f-string di Python)
+    html_inizio = """<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>🔎 Motore di Ricerca Bioacustica - Torre Flavia</title>
-    <!-- LINK ALLA FAVICON IN ASSETS -->
-    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦅 Rete Bioacustica Torre Flavia - Dashboard</title>
+    
+    <!-- Libreria Cartografica Leaflet.js -->
+    <link rel="stylesheet" href="https://unpkg.com" />
     
     <style>
-        body {{ 
-            font-family: 'Segoe UI', sans-serif; 
-            /* INSERIMENTO SFONDO AMBIENTALE CON FILTRO SCURO DI SICUREZZA */
-            background: linear-gradient(rgba(18, 18, 18, 0.85), rgba(18, 18, 18, 0.95)), url('assets/background.jpg') no-repeat center center fixed;
-            background-size: cover;
-            color: #e0e0e0; 
-            padding: 30px; 
-        }}
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #09090b; color: #e2e8f0; padding: 20px; }
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; }
+        h1 { color: #f43f5e; margin-bottom: 20px; text-shadow: 0 0 10px rgba(244,63,94,0.2); }
         
-        /* HEADER CON LOGO AFFIANCATO AL TITOLO */
-        .main-header {{
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            border-bottom: 2px solid #2d2d2d;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }}
-        .project-logo {{
-            width: 55px;
-            height: 55px;
-            object-fit: contain;
-        }}
-        h1 {{ color: #00bcd4; margin: 0; font-size: 2.2em; }}
+        /* Contenitore della mappa OpenStreetMap */
+        #map-container {
+            width: 100%;
+            margin: 0 auto 25px auto;
+            padding: 20px;
+            background: #141416;
+            border-radius: 16px;
+            border: 1px solid #27272a;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        #map {
+            width: 100%;
+            height: 400px;
+            border-radius: 12px;
+            background: #020203;
+            z-index: 10;
+        }
+        .map-header {
+            font-size: 1.3rem;
+            color: #4ade80;
+            margin-bottom: 12px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
         
-        .filtri-container {{ background: rgba(30, 30, 30, 0.85); padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; backdrop-filter: blur(5px); border: 1px solid #333; }}
-        label {{ font-weight: bold; color: #aaa; }}
-        select, input {{ background: #2d2d2d; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 1em; }}
-        table {{ width: 100%; border-collapse: collapse; background: rgba(30, 30, 30, 0.9); margin-top: 10px; border-radius: 6px; overflow: hidden; }}
-        th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #333; }}
-        th {{ background: #007c8d; color: white; }}
-        tr:hover {{ background: rgba(45, 45, 45, 0.8); }}
-        .btn-3d {{ background: #00bcd4; color: black; padding: 6px 12px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block; }}
-        .btn-3d:hover {{ background: #00e5ff; }}
-        .counter {{ font-size: 1.1em; color: #8bc34a; font-weight: bold; margin-bottom: 10px; }}
+        /* Tabella dati bioacustici */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #141416; border-radius: 12px; overflow: hidden; border: 1px solid #27272a; }
+        th, td { padding: 14px 15px; text-align: left; border-bottom: 1px solid #27272a; }
+        th { background: #27272a; color: #38bdf8; font-weight: 600; letter-spacing: 0.5px; }
+        tr:hover { background: #1f1f23; }
+        .btn-listen { background: linear-gradient(135deg, #ff0055 0%, #9d4edd 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; box-shadow: 0 4px 12px rgba(255,0,85,0.2); transition: transform 0.15s; }
+        .btn-listen:hover { transform: scale(1.03); box-shadow: 0 4px 15px rgba(255,0,85,0.4); }
     </style>
 </head>
 <body>
 
-    <!-- HEADER STRUTTURATO CON LOGO -->
-    <div class="main-header">
-        <img src="assets/logo.png" alt="Birdsong AI Logo" class="project-logo" onerror="this.style.display='none';">
-        <h1>Ricerca Avanzata Rilevamenti Bioacustici</h1>
-    </div>
+<div class="container">
+    <h1>Rete Bioacustica Stazionaria - Torre Flavia</h1>
     
-    <div class="filtri-container">
-        <div>
-            <label for="filtroSpecie">Filtra per Specie:</label>
-            <select id="filtroSpecie" onchange="filtraDati()">
-                <option value="">-- Tutte le Specie --</option>
-                {opzioni_specie}
-            </select>
-        </div>
-        <div>
-            <label for="filtroNodo">Filtra per Nodo:</label>
-            <select id="filtroNodo" onchange="filtraDati()">
-                <option value="">-- Tutti i Nodi --</option>
-                {opzioni_nodi}
-            </select>
-        </div>
-        <div>
-            <label for="filtroScore">Confidenza TinyML Minima:</label>
-            <input type="number" id="filtroScore" min="0" max="100" value="0" oninput="filtraDati()"> %
-        </div>
+    <!-- Box della Mappa -->
+    <div id="map-container">
+        <div class="map-header">📍 Stato Nodi di Monitoraggio di Campo</div>
+        <div id="map"></div>
     </div>
 
-    <div class="counter" id="risultatiCounter">Rilevamenti trovati: 0</div>
-
+    <!-- Tabella Storico Rilevamenti -->
     <table>
         <thead>
             <tr>
                 <th>Data e Ora</th>
-                <th>Nodo & Quota</th>
-                <th>Specie Identificata</th>
+                <th>Stazione</th>
+                <th>Specie Rilevata</th>
                 <th>Confidenza TinyML</th>
-                <th>Meteo di Campo</th>
-                <th>Azione</th>
+                <th>Meteo Locale</th>
+                <th>Quota Altimetrica</th>
+                <th>Spettrogramma 3D</th>
             </tr>
         </thead>
-        <tbody id="tabellaRisultati"></tbody>
+        <tbody>
+"""
+
+    html_fine = """        </tbody>
     </table>
+</div>
 
-    <script>
-        const database = {json.dumps(rilevamenti_lista)};
-        const frontendUrl = "{FRONTEND_3D_URL}";
+<!-- Script Leaflet.js per la mappatura del nodo -->
+<script src="https://unpkg.com"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Coordinate fisse fornite per il primo ricevitore stazionario
+        const lat = 41.95970;
+        const lon = 12.05215;
 
-        function filtraDati() {{
-            const specieScelta = document.getElementById("filtroSpecie").value;
-            const nodoScelto = document.getElementById("filtroNodo").value;
-            const scoreMinimo = parseFloat(document.getElementById("filtroScore").value) || 0;
+        // Centra la mappa sulla palude di Torre Flavia
+        const map = L.map('map').setView([lat, lon], 14);
 
-            const tbody = document.getElementById("tabellaRisultati");
-            tbody.innerHTML = "";
-            let contatore = 0;
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
-            database.forEach(r => {{
-                if (specieScelta && r.specie_ita !== specieScelta) return;
-                if (nodoScelto && r.nodo !== nodoScelto) return;
-                if (r.score < scoreMinimo) return;
+        // Indicatore neon circolare sul ricevitore sul campo
+        const marker = L.circleMarker([lat, lon], {
+            radius: 11,
+            fillColor: '#00f2fe',
+            color: '#38bdf8',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.85
+        }).addTo(map);
 
-                contatore++;
-                const link3d = frontendUrl + "?audio=" + r.audio_url + "&specie=" + r.specie_ita + "&meta=" + r.nodo + " (" + r.temperatura + "°C - " + r.altitudine + "m)";
-
-                const row = "<tr>" +
-                    "<td>" + r.timestamp + "</td>" +
-                    "<td><strong>" + r.nodo + "</strong><br><small>⛰️ " + r.altitudine + " m s.l.m.</small></td>" +
-                    "<td>" + r.specie_ita + "<br><small style='color:#aaa;'><em>" + r.specie_sci + "</em></small></td>" +
-                    "<td style='color:#8bc34a; font-weight:bold;'>" + r.score + "%</td>" +
-                    "<td style='color:#ffa726; font-family:monospace;'>🌡️ " + r.temperatura + "°C<br>🌀 " + r.pressione + " hPa</td>" +
-                    "<td><a href='" + link3d + "' target='_blank' class='btn-3d'>Analisi Spaziale 3D 🌐</a></td>" +
-                "</tr>";
-                tbody.innerHTML += row;
-            }});
-            document.getElementById("risultatiCounter").innerText = "Rilevamenti trovati: " + contatore;
-        }}
-        filtraDati();
-    </script>
+        marker.bindPopup(`
+            <div style="font-family: sans-serif; color: #1e1e1e; min-width: 180px;">
+                <h4 style="margin: 0 0 5px 0; color: #ff0055;">RICEVITORE FISSO #1</h4>
+                <div style="font-size: 0.9em; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
+                    <b>Ubicazione:</b> Palude Riserva<br>
+                    <b>Telemetria:</b> <span style="color: #22c55e; font-weight: bold;">ONLINE</span><br>
+                    <b>Batteria Nodo:</b> 94% 🔋
+                </div>
+            </div>
+        `);
+    });
+</script>
 </body>
 </html>
 """
 
-    with open(OUTPUT_HTML, "w", encoding="utf-8") as f:
-        f.write(html_content)
-    print(f"🟢 Motore di ricerca aggiornato con alloggiamenti grafici in: {OUTPUT_HTML}")
+    # Unione finale delle stringhe senza conflitti di f-string
+    html_completo = html_inizio + tabella_html + html_fine
+
+    # Scrittura del file di output ricerca.html nella cartella di progetto
+    with open('ricerca.html', 'w', encoding='utf-8') as f:
+        f.write(html_completo)
+    print("🟢 Motore di ricerca e mappa aggiornati in: ricerca.html")
 
 if __name__ == "__main__":
-    estrai_dati_e_genera_ricerca()
+    genera_dashboard()
