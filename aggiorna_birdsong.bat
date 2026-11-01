@@ -32,9 +32,21 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo.
 
+echo [*] Fase 4: Sincronizzazione Cloud automatica con GitHub...
+git add .
+:: Genera un messaggio di commit con data e ora correnti (es. "Aggiornamento automatico: 01/11/2026 15:50")
+git commit -m "Aggiornamento automatico dati: %date% %time%"
+git push origin main
+if %ERRORLEVEL% NEQ 0 (
+    echo ❌ Errore durante il push su GitHub. Controlla la connessione o GitHub Desktop.
+    pause
+    exit /b
+)
+echo.
+
 echo ============================================================
-echo 🟢 AGGIORNAMENTO COMPLETATO CON SUCCESSO!
-echo    Puoi consultare l'archivio e ricerca.html aggiornati.
+echo 🟢 AGGIORNAMENTO E PUBBLICAZIONE COMPLETATI CON SUCCESSO!
+echo    I dati sono online. Puoi consultare l'archivio e ricerca.html.
 echo ============================================================
 echo.
 pause
