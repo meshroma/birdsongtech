@@ -1,5 +1,5 @@
 {
- "aggiornato": "2026-11-02 16:57:30",
+ "aggiornato": "2026-11-02 18:00:17",
  "stazione": {
   "lat": 41.9597,
   "lon": 12.05215
@@ -1418,7 +1418,7 @@
    "nodo": "TORRE_FLAVIA_01",
    "specie": "Airone Cenerino",
    "sci": "Ardea cinerea",
-   "score": 0.76,
+   "score": 0.8,
    "audio": null,
    "batteria": 85,
    "temperatura": 16.8,

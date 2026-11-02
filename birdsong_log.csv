@@ -1,4 +1,4 @@
 timestamp,nodo,specie_ita,specie_sci,score_tinyml,batteria_perc,temperatura,pressione,gps_lat,gps_lon,altitudine_mslm
 2026-10-30 10:21:00,TORRE_FLAVIA_01,Pettirosso,Erithacus rubecula,0.89,92,14.5,1013.2,41.9597,12.05215,2.5
 2026-10-30 11:15:30,TORRE_FLAVIA_01,Martin Pescatore,Alcedo atthis,0.94,91,15.2,1012.8,41.9597,12.05215,2.5
-2026-10-30 14:02:15,TORRE_FLAVIA_01,Airone Cenerino,Ardea cinerea,0.76,85,16.8,1011.5,41.9597,12.05215,2.5
+2026-10-30 14:02:15,TORRE_FLAVIA_01,Airone Cenerino,Ardea cinerea,0.80,85,16.8,1011.5,41.9597,12.05215,2.5
