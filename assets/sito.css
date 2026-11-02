@@ -1,0 +1,100 @@
+/* birdsongtech — stile comune del sito (Home, Archivio) */
+:root{
+  --grafite:#1c2124;      /* fondo del logo */
+  --ardesia:#252b2f;      /* superfici */
+  --ardesia-2:#2d3439;
+  --linea:#3b444a;
+  --piuma:#8f989f;        /* grigio dell'uccello: testi secondari */
+  --testo:#eef0ee;
+  --arancio:#f87e2e;      /* onde sonore del logo */
+  --arancio-chiaro:#ffa25e;
+  --sans:'Montserrat',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --serif:'Source Serif 4','Source Serif Pro',Georgia,serif;
+  --misura:68ch;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;color:var(--testo);font:400 16px/1.55 var(--sans);
+  background-color:var(--grafite);
+  /* per usare una foto: metti assets/sfondo.jpg e scrivi url('sfondo.jpg') al posto di url('sfondo.svg') */
+  background-image:
+    linear-gradient(180deg,rgba(28,33,36,.55) 0%,rgba(28,33,36,.82) 55%,rgba(28,33,36,.97) 100%),
+    url('sfondo.svg');
+  background-size:cover,cover;background-position:center top;background-attachment:fixed;
+  min-height:100vh;display:flex;flex-direction:column;
+}
+a{color:var(--arancio-chiaro)}
+a:hover{color:#fff}
+:focus-visible{outline:2px solid var(--arancio);outline-offset:3px;border-radius:3px}
+img{max-width:100%}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- intestazione ---------- */
+.testata{display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:14px clamp(16px,4vw,48px);border-bottom:1px solid rgba(255,255,255,.06);
+  background:rgba(28,33,36,.72);backdrop-filter:blur(6px);position:sticky;top:0;z-index:50}
+.marchio{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--testo)}
+.marchio img{height:40px;width:auto}
+.marchio span{font-weight:600;font-size:19px;letter-spacing:-.01em}
+.marchio span b{font-weight:700}
+.marchio span i{font-style:normal;font-weight:400}
+.menu{display:flex;gap:4px;flex-wrap:wrap}
+.menu a{color:var(--piuma);text-decoration:none;font-weight:500;font-size:15px;padding:8px 14px;border-radius:999px}
+.menu a:hover{color:var(--testo);background:rgba(255,255,255,.05)}
+.menu a[aria-current="page"]{color:var(--testo);background:rgba(248,126,46,.14);box-shadow:inset 0 0 0 1px rgba(248,126,46,.45)}
+
+main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,48px)}
+
+/* ---------- tipografia ---------- */
+h1,h2,h3{font-family:var(--sans);line-height:1.15;letter-spacing:-.015em;margin:0}
+h1{font-size:clamp(34px,5.4vw,62px);font-weight:700}
+h2{font-size:clamp(24px,2.6vw,32px);font-weight:600;margin-bottom:6px}
+h3{font-size:18px;font-weight:600}
+.prosa{font-family:var(--serif);font-size:18px;line-height:1.65;max-width:var(--misura);color:#d9dddb}
+.sci{font-family:var(--serif);font-style:italic;color:var(--piuma)}
+.nota{color:var(--piuma);font-size:14px}
+
+/* ---------- pulsanti ---------- */
+.btn{display:inline-flex;align-items:center;gap:10px;font:600 15px/1 var(--sans);text-decoration:none;
+  padding:13px 20px;border-radius:999px;border:1px solid transparent;cursor:pointer;color:var(--grafite);
+  background:var(--arancio)}
+.btn:hover{background:var(--arancio-chiaro);color:var(--grafite)}
+.btn.secondario{background:transparent;color:var(--testo);border-color:rgba(255,255,255,.22)}
+.btn.secondario:hover{border-color:var(--arancio);color:#fff}
+.btn.piccolo{padding:9px 14px;font-size:14px}
+.btn[aria-disabled="true"]{background:transparent;border-color:var(--linea);color:var(--piuma);cursor:default}
+/* simbolo delle onde, ripreso dal logo */
+.onde{width:16px;height:16px;flex:none}
+
+/* ---------- sezioni ---------- */
+.sezione{padding:56px 0;border-top:1px solid rgba(255,255,255,.07)}
+.sezione > header{margin-bottom:26px}
+.sezione > header p{margin:6px 0 0}
+
+/* ---------- piè di pagina ---------- */
+.piede{margin-top:64px;padding:28px clamp(16px,4vw,48px);border-top:1px solid rgba(255,255,255,.07);
+  background:rgba(20,24,26,.9);color:var(--piuma);font-size:14px}
+.piede .dentro{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px 40px;justify-content:space-between}
+.piede p{margin:0;max-width:60ch}
+
+/* ---------- tabella / elenchi ---------- */
+.tabella{width:100%;border-collapse:collapse;font-size:15px}
+.tabella th{text-align:left;font-weight:600;font-size:13px;color:var(--piuma);padding:10px 12px;border-bottom:1px solid var(--linea);white-space:nowrap}
+.tabella td{padding:12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:middle}
+.tabella tbody tr:hover{background:rgba(255,255,255,.03)}
+.tabella .specie{font-weight:600}
+.tabella .sci{display:block;font-size:14px}
+.num{font-variant-numeric:tabular-nums}
+
+/* barra di confidenza */
+.conf{display:inline-flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+.conf i{display:block;width:54px;height:5px;border-radius:3px;background:var(--linea);overflow:hidden}
+.conf i b{display:block;height:100%;background:var(--arancio)}
+
+@media (max-width:720px){
+  .testata{flex-direction:column;align-items:flex-start;gap:10px;position:static}
+  .marchio img{height:34px}
+  .menu a{padding:7px 11px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

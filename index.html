@@ -1,112 +1,217 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Birdsong Tech - 3D Neon Spectrogram</title>
-    <style>
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html,body{width:100%;height:100%;overflow:hidden;background:#020405;font-family:monospace;color:#888}
-        canvas{position:fixed;inset:0;display:block}
-        #top-bar{position:fixed;top:14px;left:20px;z-index:20;font-size:16px;font-weight:bold;letter-spacing:.1em;color:#33ff88;text-shadow:0 0 10px rgba(51,255,136,0.8)}
-        #legend{position:fixed;bottom:20px;left:20px;z-index:20;font-size:10px;line-height:1.8;color:rgba(255,255,255,0.4)}
-        #btn-play{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;padding:15px 30px;background:#33ff88;color:#020405;border:none;font-weight:bold;border-radius:4px;cursor:pointer;box-shadow:0 0 20px #33ff88;display:none;font-family:monospace;letter-spacing:1px;}
-        #hint{position:fixed;top:60%;left:50%;transform:translate(-50%,-50%);font-style:italic;color:rgba(255,255,255,0.3);z-index:5}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>birdsongtech · Le voci della Palude di Torre Flavia</title>
+<meta name="description" content="Archivio dei canti di uccelli registrati e riconosciuti automaticamente nel Monumento Naturale Palude di Torre Flavia (Ladispoli, Roma).">
+<script>
+  /* vecchi link al visualizzatore (index.html?audio=...) -> nuovo player */
+  if (location.search.includes('audio=')) location.replace('player.html' + location.search);
+</script>
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="assets/sito.css">
+<style>
+  /* ---- apertura ---- */
+  .apertura{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr);gap:clamp(28px,5vw,72px);align-items:center;
+    min-height:calc(88vh - 70px);padding:56px 0 64px}
+  .apertura .logo{width:min(380px,80%);height:auto;display:block;margin:0 0 30px -6px}
+  .apertura h1{max-width:13ch}
+  .apertura .prosa{margin:22px 0 30px}
+  .azioni{display:flex;flex-wrap:wrap;gap:12px}
+
+  /* scheda dell'ultimo canto: e' l'elemento caratteristico della pagina */
+  .ultimo{position:relative;background:rgba(37,43,47,.86);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:28px 28px 26px;overflow:hidden}
+  .ultimo::before{content:"";position:absolute;right:-90px;top:-90px;width:260px;height:260px;border-radius:50%;
+    background:repeating-radial-gradient(circle,rgba(248,126,46,.0) 0 26px,rgba(248,126,46,.22) 26px 30px);
+    -webkit-mask:linear-gradient(225deg,#000 25%,transparent 70%);mask:linear-gradient(225deg,#000 25%,transparent 70%)}
+  .ultimo h2{font-size:15px;font-weight:500;color:var(--piuma);margin:0 0 18px;position:relative}
+  .ultimo .nome{font-size:clamp(28px,3vw,38px);font-weight:700;line-height:1.1;position:relative}
+  .ultimo .sci{font-size:19px;margin:4px 0 22px;display:block;position:relative}
+  .ultimo dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:0 0 24px;font-size:15px;position:relative}
+  .ultimo dt{color:var(--piuma)}
+  .ultimo dd{margin:0}
+
+  /* ---- percorso del dato ---- */
+  .passi{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:0;counter-reset:passo}
+  .passi li{counter-increment:passo;padding:0 20px 0 0;position:relative}
+  .passi li::before{content:counter(passo);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;
+    border:1.5px solid var(--arancio);color:var(--arancio);font-weight:600;font-size:15px;margin-bottom:14px;background:var(--grafite)}
+  .passi li::after{content:"";position:absolute;left:40px;right:6px;top:17px;height:1px;background:linear-gradient(90deg,rgba(248,126,46,.6),rgba(248,126,46,.1))}
+  .passi li:last-child::after{display:none}
+  .passi h3{margin-bottom:6px}
+  .passi p{margin:0;color:#cdd2d0;font-size:15px}
+
+  /* ---- mappa ---- */
+  .mappa-griglia{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:28px;align-items:start}
+  #mappa{height:420px;border-radius:14px;border:1px solid var(--linea);background:var(--ardesia)}
+  .leaflet-container{font-family:var(--sans)}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--ardesia);color:var(--testo)}
+  .leaflet-popup-content{margin:12px 16px;font-size:14px}
+  .leaflet-container a.leaflet-popup-close-button{color:var(--piuma)}
+  .nodi{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+  .nodi li{background:rgba(37,43,47,.8);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px 18px}
+  .nodi h3{display:flex;align-items:center;gap:10px}
+  .nodi h3::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--arancio);box-shadow:0 0 0 4px rgba(248,126,46,.18)}
+  .nodi p{margin:6px 0 0;font-size:14px;color:var(--piuma)}
+  .nodi p b{color:var(--testo);font-weight:500}
+  .mappa-vuota{display:grid;place-items:center;text-align:center;padding:24px;color:var(--piuma)}
+
+  /* ---- specie ---- */
+  .specie-elenco{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:2px 28px}
+  .specie-elenco a{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:14px 2px;border-bottom:1px solid rgba(255,255,255,.08);text-decoration:none;color:var(--testo)}
+  .specie-elenco a:hover .nome{color:var(--arancio-chiaro)}
+  .specie-elenco .nome{font-weight:600;display:block}
+  .specie-elenco .sci{font-size:15px}
+  .specie-elenco .quanti{color:var(--piuma);font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+  @media (max-width:900px){
+    .apertura{grid-template-columns:1fr;min-height:0;padding-top:36px}
+    .passi{grid-template-columns:1fr;gap:22px}
+    .passi li{padding:0 0 0 52px}
+    .passi li::before{position:absolute;left:0;top:-4px}
+    .passi li::after{display:none}
+    .mappa-griglia{grid-template-columns:1fr}
+    #mappa{height:320px}
+  }
+</style>
 </head>
 <body>
-    <canvas id="c"></canvas>
-    <div id="top-bar"><div id="bname">ATTESA EVENTI BIOACUSTICI...</div></div>
-    <button id="btn-play" onclick="startAudio()">⚡ ACCENDI SPETTROGRAMMA NEON</button>
-    <div id="hint"><p id="msg-stato">In attesa del flusso dai parametri URL...</p></div>
-    <div id="legend">
-        <div>Y - FREQUENZA NEON (LOG SCALE 400Hz - 12kHz)</div>
-        <div>X - AVANZAMENTO TEMPORALE (FINESTRA SCORREVOLE)</div>
-        <div>Z - INTENSITA SPETTRALE (PROFONDITA VETTORIALE)</div>
+
+<header class="testata">
+  <a class="marchio" href="index.html"><img src="assets/logo-simbolo.png" alt="" width="42" height="40"><span><b>birdsong</b><i>tech</i></span></a>
+  <nav class="menu" aria-label="Sezioni del sito">
+    <a href="index.html" aria-current="page">Home</a>
+    <a href="archivio.html">Archivio dei canti</a>
+    <a href="player.html?demo=1">Visualizzatore 3D</a>
+  </nav>
+</header>
+
+<main>
+  <section class="apertura">
+    <div>
+      <img class="logo" src="assets/logo.png" alt="birdsongtech — innovative animal sounds" width="732" height="489">
+      <h1>Le voci della Palude di Torre Flavia</h1>
+      <p class="prosa">Una stazione di ascolto nascosta tra i canneti della riserva registra giorno e notte. Quando un piccolo modello di intelligenza artificiale riconosce il canto di un uccello, conserva la registrazione. Qui puoi cercarla per specie o per data, ascoltarla e vederne le frequenze prendere forma in tre dimensioni.</p>
+      <div class="azioni">
+        <a class="btn" href="archivio.html">Cerca nell'archivio</a>
+        <a class="btn secondario" href="player.html?demo=1">Prova il visualizzatore 3D</a>
+      </div>
     </div>
-    <script src="https://cloudflare.com"></script>
-    <script src="https://jsdelivr.net"></script>
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        const audioUrl = params.get("audio");
-        const specieName = params.get("specie");
-        if(specieName) document.getElementById("bname").textContent = specieName.toUpperCase();
+    <aside class="ultimo" id="ultimo" aria-live="polite">
+      <h2>Ultimo canto riconosciuto</h2>
+      <p class="nota">Nessun rilevamento pubblicato per ora.</p>
+    </aside>
+  </section>
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
-        camera.position.set(0, 2, 6);
-        const renderer = new THREE.WebGLRenderer({canvas: document.getElementById("c"), antialias: true});
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x020405);
-        const ctrl = new THREE.OrbitControls(camera, renderer.domElement);
+  <section class="sezione" aria-labelledby="t-percorso">
+    <header>
+      <h2 id="t-percorso">Dal canneto al tuo schermo</h2>
+      <p class="nota">Il viaggio di ogni registrazione, dalla stazione nella palude fino a questo archivio.</p>
+    </header>
+    <ol class="passi">
+      <li><h3>Ascolto</h3><p>Un microfono collegato a una scheda XIAO ESP32-S3 Sense ascolta la palude senza interruzioni.</p></li>
+      <li><h3>Riconoscimento</h3><p>Il modello di intelligenza artificiale a bordo salva il file solo se è sicuro della specie almeno all'85–90%.</p></li>
+      <li><h3>Trasmissione</h3><p>Due volte al giorno una Heltec V4, alimentata da un pannello solare, invia l'elenco dei canti via LoRa su una rete Meshtastic privata.</p></li>
+      <li><h3>Raccolta</h3><p>Alla base una Heltec V3 riceve l'elenco e lo passa a un Raspberry Pi. Le registrazioni vengono scaricate in riserva via Bluetooth o Wi-Fi.</p></li>
+      <li><h3>Pubblicazione</h3><p>Elenco e file audio vengono caricati qui, consultabili da chiunque.</p></li>
+    </ol>
+  </section>
 
-        const grid = new THREE.GridHelper(6, 20, 0x00ff88, 0x113322);
-        grid.position.y = -1.5; scene.add(grid);
+  <section class="sezione" aria-labelledby="t-mappa">
+    <header>
+      <h2 id="t-mappa">Le stazioni di ascolto</h2>
+      <p class="nota">Monumento Naturale Palude di Torre Flavia, Ladispoli (Roma).</p>
+    </header>
+    <div class="mappa-griglia">
+      <div id="mappa" role="region" aria-label="Mappa delle stazioni"></div>
+      <ul class="nodi" id="nodi"></ul>
+    </div>
+  </section>
 
-        const MAX_POINTS = 1500;
-        const geo = new THREE.BufferGeometry();
-        const pos = new Float32Array(MAX_POINTS * 3);
-        const cols = new Float32Array(MAX_POINTS * 3);
-        geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-        geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
+  <section class="sezione" aria-labelledby="t-specie">
+    <header>
+      <h2 id="t-specie">Specie ascoltate</h2>
+      <p class="nota">Scegli una specie per vedere tutte le sue registrazioni.</p>
+    </header>
+    <ul class="specie-elenco" id="specie"></ul>
+  </section>
+</main>
 
-        const mat = new THREE.PointsMaterial({size: 0.18, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending});
-        const points = new THREE.Points(geo, mat); scene.add(points);
+<footer class="piede">
+  <div class="dentro">
+    <p>birdsongtech — monitoraggio bioacustico del Monumento Naturale Palude di Torre Flavia. <span data-aggiornato></span>.</p>
+    <p>Contatti: <a href="mailto:birdsongtech@gmail.com">birdsongtech@gmail.com</a><br>Mappa © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, © <a href="https://carto.com/attributions">CARTO</a>.</p>
+  </div>
+</footer>
 
-        let actx, anlsr, fftBuf, audio, src;
-        
-        if(audioUrl) {
-            document.getElementById("btn-play").style.display = "block";
-            document.getElementById("msg-stato").textContent = "Clicca sul pulsante in alto per bypassare il blocco audio del browser.";
-        }
+<script src="data/rilevamenti.js"></script>
+<script src="assets/sito.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+  const {D, esc, dataLunga, ora, nomeNodo, bottoneAscolta, confHTML, specieConteggio} = BS;
 
-        function startAudio() {
-            document.getElementById("btn-play").style.display = "none";
-            document.getElementById("hint").style.display = "none";
-            
-            actx = new (window.AudioContext || window.webkitAudioContext)();
-            anlsr = actx.createAnalyser(); anlsr.fftSize = 2048;
-            fftBuf = new Uint8Array(anlsr.frequencyBinCount);
-            
-            audio = new Audio(); audio.crossOrigin = "anonymous";
-            audio.src = audioUrl; audio.loop = true;
-            src = actx.createMediaElementSource(audio);
-            src.connect(anlsr); anlsr.connect(actx.destination);
-            
-            audio.play().then(() => {
-                let pIdx = 0;
-                setInterval(() => {
-                    anlsr.getByteFrequencyData(fftBuf);
-                    const pA = geo.attributes.position.array;
-                    const cA = geo.attributes.color.array;
-                    for(let i = 15; i < 800; i++) {
-                        let v = fftBuf[i];
-                        if(v > 95) {
-                            let s = pIdx * 3;
-                            pA[s] = ((i / 800) * 5) - 2.5;
-                            pA[s+1] = (Math.log(i) - 2.7) * 1.2;
-                            pA[s+2] = (v / 255) * 2.5;
-                            cA[s] = i / 800; cA[s+1] = v / 255; cA[s+2] = 1.0 - (i / 800);
-                            pIdx = (pIdx + 1) % MAX_POINTS;
-                        }
-                    }
-                }
-                geo.attributes.position.needsUpdate=true;
-                geo.attributes.color.needsUpdate=true;
-            },60);
-        }).catch(e=>console.log);
+  /* ultimo canto: il piu' recente con audio, altrimenti il piu' recente in assoluto */
+  const r = D.rilevamenti.find(x => x.audio) || D.rilevamenti[0];
+  if (r) {
+    const meteo = [r.temperatura != null ? `${r.temperatura} °C` : null, r.pressione != null ? `${r.pressione} hPa` : null].filter(Boolean).join(', ');
+    document.getElementById('ultimo').innerHTML = `
+      <h2>Ultimo canto riconosciuto</h2>
+      <div class="nome">${esc(r.specie)}</div>
+      <span class="sci">${esc(r.sci)}</span>
+      <dl>
+        <dt>Quando</dt><dd>${dataLunga(r.data)}, ore ${ora(r.ora)}</dd>
+        <dt>Dove</dt><dd>${esc(nomeNodo(r.nodo))}</dd>
+        <dt>Affidabilità</dt><dd>${confHTML(r.score)}</dd>
+        ${meteo ? `<dt>Meteo</dt><dd>${esc(meteo)}</dd>` : ''}
+      </dl>
+      ${bottoneAscolta(r, false)}`;
+  }
+
+  /* elenco stazioni */
+  const nodi = document.getElementById('nodi');
+  nodi.innerHTML = D.nodi.length ? D.nodi.map(n => `
+    <li><h3>${esc(nomeNodo(n.nodo))}</h3>
+      <p><b>${n.rilevamenti}</b> ${n.rilevamenti === 1 ? 'canto riconosciuto' : 'canti riconosciuti'} · ultimo: <b>${esc(n.ultima_specie)}</b>, ${dataLunga(n.ultimo.slice(0,10))}</p>
+      <p>${n.quota != null ? `Quota ${n.quota} m s.l.m.` : ''}${n.batteria != null ? ` · batteria ${n.batteria}%` : ''}</p>
+    </li>`).join('') : '<li><p>Nessuna stazione ha ancora inviato dati.</p></li>';
+
+  /* mappa */
+  const box = document.getElementById('mappa');
+  if (window.L) {
+    const map = L.map(box, {scrollWheelZoom:false}).setView([D.stazione.lat, D.stazione.lon], 15);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19, subdomains: 'abcd',
+      attribution: '&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(map);
+    const punti = [];
+    for (const n of D.nodi) {
+      const ll = [n.lat, n.lon]; punti.push(ll);
+      L.circleMarker(ll, {radius:9, color:'#f87e2e', weight:2, fillColor:'#f87e2e', fillOpacity:.45})
+        .addTo(map)
+        .bindPopup(`<b>${esc(nomeNodo(n.nodo))}</b><br>${n.rilevamenti} canti · ultimo: ${esc(n.ultima_specie)}<br><a href="archivio.html?nodo=${encodeURIComponent(n.nodo)}">Vedi i suoi canti</a>`);
     }
- {
-            requestAnimationFrame(animate);
-            points.rotation.y += 0.0015;
-            ctrl.update();
-            renderer.render(scene, camera);
-        }
-        animate();
-        window.addEventListener("resize", () => {
-            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
+    if (punti.length > 1) map.fitBounds(punti, {padding:[60,60], maxZoom:16});
+  } else {
+    box.classList.add('mappa-vuota');
+    box.textContent = 'La mappa non è disponibile senza connessione a internet.';
+  }
+
+  /* specie */
+  const sp = specieConteggio();
+  document.getElementById('specie').innerHTML = sp.length ? sp.map(s => `
+    <li><a href="archivio.html?specie=${encodeURIComponent(s.specie)}">
+      <span><span class="nome">${esc(s.specie)}</span><span class="sci">${esc(s.sci)}</span></span>
+      <span class="quanti">${s.n} ${s.n === 1 ? 'canto' : 'canti'}</span></a></li>`).join('')
+    : '<li class="nota">Le specie compariranno qui dopo la prima pubblicazione.</li>';
+})();
+</script>
 </body>
 </html>

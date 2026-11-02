@@ -179,3 +179,8 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+# ---- birdsongtech
+# .wav scaricati dalla XIAO in attesa di importazione
+da_importare/
+# archivio audio locale: i file pubblici stanno su Internet Archive
+audio/

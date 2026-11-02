@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Archivio dei canti · birdsongtech</title>
+<meta name="description" content="Cerca i canti di uccelli registrati nella Palude di Torre Flavia per specie, data e stazione.">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/sito.css">
+<style>
+  .intro{padding:48px 0 26px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:18px}
+  .intro h1{font-size:clamp(32px,4.2vw,48px)}
+  .intro p{margin:10px 0 0}
+
+  .filtri{display:grid;grid-template-columns:minmax(200px,1.6fr) repeat(3,minmax(140px,1fr)) minmax(170px,1.1fr);gap:14px;align-items:end;
+    background:rgba(37,43,47,.9);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px 20px}
+  .campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .campo label{font-size:13px;font-weight:500;color:var(--piuma)}
+  .campo input,.campo select{font:inherit;font-size:15px;color:var(--testo);background:var(--grafite);border:1px solid var(--linea);
+    border-radius:10px;padding:10px 12px;width:100%;min-width:0;color-scheme:dark}
+  .campo input:focus,.campo select:focus{border-color:var(--arancio);outline:none;box-shadow:0 0 0 3px rgba(248,126,46,.25)}
+  .campo input[type=range]{padding:0;accent-color:var(--arancio);height:38px;background:none;border:none;box-shadow:none}
+  .riga-sotto{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;font-size:14px;color:var(--piuma)}
+  .spunta{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+  .spunta input{accent-color:var(--arancio);width:16px;height:16px}
+  .azzera{background:none;border:none;color:var(--arancio-chiaro);font:inherit;cursor:pointer;padding:4px 0;text-decoration:underline}
+
+  .esiti{margin-top:26px}
+  .conteggio{font-size:15px;color:var(--piuma);margin:0 0 10px}
+  .conteggio b{color:var(--testo)}
+  .contenitore{background:rgba(28,33,36,.86);border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow-x:auto}
+  .tabella th button{all:unset;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+  .tabella th button:focus-visible{outline:2px solid var(--arancio);outline-offset:3px}
+  .tabella th[aria-sort] button::after{content:"";border:4px solid transparent;border-top-color:currentColor;margin-top:4px;opacity:.35}
+  .tabella th[aria-sort="ascending"] button::after{border-top-color:transparent;border-bottom-color:var(--arancio);margin:0 0 4px;opacity:1}
+  .tabella th[aria-sort="descending"] button::after{border-top-color:var(--arancio);opacity:1}
+  .tabella td.quando{white-space:nowrap}
+  .tabella td.quando small{display:block;color:var(--piuma)}
+  .tabella td.meteo{color:var(--piuma);font-size:14px;white-space:nowrap}
+  .tabella td:last-child{text-align:right}
+  .nessuno{padding:40px 20px;text-align:center;color:var(--piuma)}
+  .nessuno p{margin:0 0 14px}
+
+  @media (max-width:980px){ .filtri{grid-template-columns:1fr 1fr} .campo.cerca{grid-column:1/-1} }
+  @media (max-width:720px){
+    .tabella thead{display:none}
+    .tabella, .tabella tbody, .tabella tr, .tabella td{display:block;width:100%}
+    .tabella tr{padding:14px 16px;border-bottom:1px solid var(--linea)}
+    .tabella td{border:none;padding:3px 0;text-align:left!important}
+    .tabella td:last-child{padding-top:10px}
+    .tabella td[data-t]::before{content:attr(data-t) ": ";color:var(--piuma);font-size:13px}
+  }
+</style>
+</head>
+<body>
+
+<header class="testata">
+  <a class="marchio" href="index.html"><img src="assets/logo-simbolo.png" alt="" width="42" height="40"><span><b>birdsong</b><i>tech</i></span></a>
+  <nav class="menu" aria-label="Sezioni del sito">
+    <a href="index.html">Home</a>
+    <a href="archivio.html" aria-current="page">Archivio dei canti</a>
+    <a href="player.html?demo=1">Visualizzatore 3D</a>
+  </nav>
+</header>
+
+<main>
+  <div class="intro">
+    <div>
+      <h1>Archivio dei canti</h1>
+      <p class="nota" data-aggiornato></p>
+    </div>
+  </div>
+
+  <form class="filtri" id="filtri" role="search" onsubmit="return false">
+    <div class="campo cerca">
+      <label for="f-testo">Specie</label>
+      <input id="f-testo" type="search" list="elenco-specie" placeholder="Es. pettirosso, Alcedo atthis…" autocomplete="off">
+      <datalist id="elenco-specie"></datalist>
+    </div>
+    <div class="campo">
+      <label for="f-dal">Dal giorno</label>
+      <input id="f-dal" type="date">
+    </div>
+    <div class="campo">
+      <label for="f-al">Al giorno</label>
+      <input id="f-al" type="date">
+    </div>
+    <div class="campo">
+      <label for="f-nodo">Stazione</label>
+      <select id="f-nodo"><option value="">Tutte</option></select>
+    </div>
+    <div class="campo">
+      <label for="f-conf">Affidabilità minima: <output id="o-conf">0%</output></label>
+      <input id="f-conf" type="range" min="0" max="100" step="5" value="0">
+    </div>
+    <div class="riga-sotto">
+      <label class="spunta"><input id="f-audio" type="checkbox"> Solo canti con audio da ascoltare</label>
+      <button type="button" class="azzera" id="azzera">Azzera i filtri</button>
+    </div>
+  </form>
+
+  <section class="esiti" aria-live="polite">
+    <p class="conteggio" id="conteggio"></p>
+    <div class="contenitore">
+      <table class="tabella">
+        <thead>
+          <tr>
+            <th aria-sort="descending" data-col="quando"><button type="button">Data e ora</button></th>
+            <th aria-sort="none" data-col="specie"><button type="button">Specie</button></th>
+            <th aria-sort="none" data-col="nodo"><button type="button">Stazione</button></th>
+            <th aria-sort="none" data-col="score"><button type="button">Affidabilità</button></th>
+            <th>Meteo</th>
+            <th><span class="vh">Ascolta</span></th>
+          </tr>
+        </thead>
+        <tbody id="righe"></tbody>
+      </table>
+      <div class="nessuno" id="nessuno" hidden>
+        <p>Nessun canto corrisponde a questi filtri.</p>
+        <button type="button" class="btn secondario piccolo" id="azzera2">Azzera i filtri</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="piede">
+  <div class="dentro">
+    <p>birdsongtech — monitoraggio bioacustico del Monumento Naturale Palude di Torre Flavia.</p>
+    <p>Puoi condividere una ricerca copiando l'indirizzo della pagina. Contatti: <a href="mailto:birdsongtech@gmail.com">birdsongtech@gmail.com</a></p>
+  </div>
+</footer>
+
+<script src="data/rilevamenti.js"></script>
+<script src="assets/sito.js"></script>
+<script>
+(function(){
+  const {D, esc, dataBreve, ora, nomeNodo, confHTML, bottoneAscolta, specieConteggio} = BS;
+  const $ = id => document.getElementById(id);
+  const f = {testo:$('f-testo'), dal:$('f-dal'), al:$('f-al'), nodo:$('f-nodo'), conf:$('f-conf'), audio:$('f-audio')};
+  let ordine = {col:'quando', dir:-1};
+
+  /* opzioni */
+  $('elenco-specie').innerHTML = specieConteggio().map(s => `<option value="${esc(s.specie)}">${esc(s.sci)}</option>`).join('');
+  f.nodo.innerHTML += D.nodi.map(n => `<option value="${esc(n.nodo)}">${esc(nomeNodo(n.nodo))}</option>`).join('');
+  const date = D.rilevamenti.map(r => r.data).sort();
+  if (date.length) for (const el of [f.dal, f.al]) { el.min = date[0]; el.max = date[date.length-1]; }
+
+  /* filtri letti dall'indirizzo: archivio.html?specie=Pettirosso&nodo=...&dal=...&al=... */
+  const q = new URLSearchParams(location.search);
+  f.testo.value = q.get('specie') || '';
+  f.dal.value = q.get('dal') || '';
+  f.al.value = q.get('al') || '';
+  if (q.get('giorno')) { f.dal.value = f.al.value = q.get('giorno'); }
+  f.nodo.value = q.get('nodo') || '';
+  f.conf.value = q.get('conf') || 0;
+  f.audio.checked = q.get('audio') === '1';
+
+  const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+
+  function aggiornaIndirizzo(){
+    const p = new URLSearchParams();
+    if (f.testo.value.trim()) p.set('specie', f.testo.value.trim());
+    if (f.dal.value) p.set('dal', f.dal.value);
+    if (f.al.value) p.set('al', f.al.value);
+    if (f.nodo.value) p.set('nodo', f.nodo.value);
+    if (+f.conf.value) p.set('conf', f.conf.value);
+    if (f.audio.checked) p.set('audio', '1');
+    const s = p.toString();
+    history.replaceState(null, '', s ? '?' + s : location.pathname);
+  }
+
+  function mostra(){
+    $('o-conf').textContent = f.conf.value + '%';
+    const t = norm(f.testo.value), min = +f.conf.value / 100;
+    let lista = D.rilevamenti.filter(r =>
+      (!t || norm(r.specie).includes(t) || norm(r.sci).includes(t)) &&
+      (!f.dal.value || r.data >= f.dal.value) &&
+      (!f.al.value || r.data <= f.al.value) &&
+      (!f.nodo.value || r.nodo === f.nodo.value) &&
+      (r.score >= min - 1e-9) &&
+      (!f.audio.checked || r.audio));
+
+    const chiave = {
+      quando: r => r.data + ' ' + r.ora, specie: r => norm(r.specie),
+      nodo: r => r.nodo, score: r => r.score
+    }[ordine.col];
+    lista.sort((a,b) => (chiave(a) > chiave(b) ? 1 : chiave(a) < chiave(b) ? -1 : 0) * ordine.dir);
+
+    const conAudio = lista.filter(r => r.audio).length;
+    $('conteggio').innerHTML = lista.length
+      ? `<b>${lista.length}</b> ${lista.length === 1 ? 'canto trovato' : 'canti trovati'}, ${conAudio} con audio da ascoltare`
+      : '';
+    $('nessuno').hidden = lista.length > 0 || D.rilevamenti.length === 0;
+    if (D.rilevamenti.length === 0) $('conteggio').textContent = "L'archivio è ancora vuoto: i canti compariranno qui dopo la prima pubblicazione.";
+
+    $('righe').innerHTML = lista.map(r => {
+      const meteo = [r.temperatura != null ? `${r.temperatura} °C` : null, r.pressione != null ? `${r.pressione} hPa` : null].filter(Boolean).join(' · ') || '—';
+      return `<tr>
+        <td class="quando num">${dataBreve(r.data)}<small>ore ${ora(r.ora)}</small></td>
+        <td><span class="specie">${esc(r.specie)}</span><span class="sci">${esc(r.sci)}</span></td>
+        <td data-t="Stazione">${esc(nomeNodo(r.nodo))}</td>
+        <td data-t="Affidabilità">${confHTML(r.score)}</td>
+        <td class="meteo" data-t="Meteo">${esc(meteo)}</td>
+        <td>${bottoneAscolta(r)}</td>
+      </tr>`;
+    }).join('');
+    aggiornaIndirizzo();
+  }
+
+  for (const el of Object.values(f)) el.addEventListener('input', mostra);
+  document.querySelectorAll('th[data-col] button').forEach(b => b.addEventListener('click', () => {
+    const th = b.parentElement, col = th.dataset.col;
+    ordine = {col, dir: ordine.col === col ? -ordine.dir : (col === 'quando' || col === 'score' ? -1 : 1)};
+    document.querySelectorAll('th[data-col]').forEach(x => x.setAttribute('aria-sort', 'none'));
+    th.setAttribute('aria-sort', ordine.dir > 0 ? 'ascending' : 'descending');
+    mostra();
+  }));
+  function azzera(){ f.testo.value=''; f.dal.value=''; f.al.value=''; f.nodo.value=''; f.conf.value=0; f.audio.checked=false; mostra(); }
+  $('azzera').addEventListener('click', azzera);
+  $('azzera2').addEventListener('click', azzera);
+  mostra();
+})();
+</script>
+</body>
+</html>

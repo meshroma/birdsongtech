@@ -1,0 +1,31 @@
+/etc/systemd/system/birdsong-display.service
+/etc/systemd/system/birdsong.service
+/etc/systemd/system/cloud-config.service
+/etc/systemd/system/cloud-init.service
+/etc/systemd/system/dbus-fi.w1.wpa_supplicant1.service
+/etc/systemd/system/dbus-org.bluez.service
+/etc/systemd/system/dbus-org.freedesktop.Avahi.service
+/etc/systemd/system/dbus-org.freedesktop.nm-dispatcher.service
+/etc/systemd/system/dbus-org.freedesktop.timesync1.service
+/etc/systemd/system/sshd.service
+/etc/systemd/system/userconfig.service
+Name: meshtastic
+Version: 2.7.11
+Summary: Python API & client shell for talking to Meshtastic devices
+Home-page: 
+Author: Meshtastic Developers
+Author-email: contact@meshtastic.org
+License: GPL-3.0-only
+Location: /home/pi/mesh_env/lib/python3.13/site-packages
+Requires: bleak, packaging, protobuf, pypubsub, pyserial, pyyaml, requests, tabulate
+Required-by: 
+PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
+NAME="Debian GNU/Linux"
+VERSION_ID="13"
+VERSION="13 (trixie)"
+VERSION_CODENAME=trixie
+DEBIAN_VERSION_FULL=13.7
+ID=debian
+HOME_URL="https://www.debian.org/"
+SUPPORT_URL="https://www.debian.org/support"
+BUG_REPORT_URL="https://bugs.debian.org/"

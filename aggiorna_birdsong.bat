@@ -1,52 +1,80 @@
 @echo off
 chcp 65001 > nul
-title 🦅 Sincronizzazione e Aggiornamento Birdsong AI - Cloud Edition
-
-:: Forza il terminale a posizionarsi nella cartella in cui si trova questo file .bat
+title birdsongtech - aggiornamento archivio e sito
 cd /d "%~dp0"
 
+:: ============================================================
+::  CONFIGURAZIONE (facoltativa)
+::  Per scaricare il log dal Raspberry Pi in automatico, compila
+::  queste due righe (Windows 10/11 ha gia' il comando scp):
+::    set PI_HOST=pi@192.168.1.50
+::    set PI_LOG=/home/pi/birdsong/birdsong_log.csv
+::  Se restano vuote, il log viene preso cosi' com'e' nella cartella.
+::  Per non dover scrivere la password: vedi raspberry\LEGGIMI.md
+:: ============================================================
+set PI_HOST=pi@192.168.1.100
+set PI_LOG=/home/pi/birdsong_log.csv
+
 echo ============================================================
-echo   🦅 RETE BIOACUSTICA TORRE FLAVIA - AGGIORNAMENTO DATI
+echo   RETE BIOACUSTICA TORRE FLAVIA - AGGIORNAMENTO
 echo ============================================================
 echo.
 
-echo [*] Fase 1: Sincronizzazione log CSV dal Raspberry Pi 3...
-echo [OK] File birdsong_log.csv allineato localmente.
-echo.
-
-echo [*] Fase 2: Inserimento nel Database e rigenerazione pagine statiche...
-python ingestore.py
-if %ERRORLEVEL% NEQ 0 (
-    echo ❌ Errore durante l'esecuzione di ingestore.py
-    pause
-    exit /b
+echo [1/4] Log dal Raspberry Pi
+if "%PI_HOST%"=="" (
+    echo       Nessun Raspberry configurato: uso birdsong_log.csv presente nella cartella.
+) else (
+    scp "%PI_HOST%:%PI_LOG%" birdsong_log.csv
+    if errorlevel 1 (
+        echo [!] Download del log non riuscito: continuo con la copia gia' presente.
+    ) else (
+        echo       Log scaricato.
+    )
 )
 echo.
 
-echo [*] Fase 3: Aggiornamento del motore di ricerca avanzata...
-python generatore_ricerca.py
-if %ERRORLEVEL% NEQ 0 (
-    echo ❌ Errore durante l'esecuzione di generatore_ricerca.py
-    pause
-    exit /b
+echo [2/4] Audio da importare
+if exist "da_importare\*.wav" (
+    echo       Trovati file .wav in da_importare\ : verranno associati ai rilevamenti.
+) else (
+    echo       Nessun .wav nuovo. Dopo lo scarico dalla XIAO copiali in da_importare\
 )
 echo.
 
-echo [*] Fase 4: Sincronizzazione automatica Cloud (birdsongtech)...
-git add .
-:: Genera un messaggio di commit automatico con la data e l'ora corrente del PC di casa
-git commit -m "Aggiornamento automatico dati: %date% %time%"
-git push -u origin main
-if %ERRORLEVEL% NEQ 0 (
-    echo ❌ Errore durante il push su GitHub. Verifica che la repository sia pubblicata.
+echo [3/4] Database, Internet Archive e dati del sito
+python pubblica.py
+if errorlevel 1 (
+    echo [X] Errore in pubblica.py: il sito NON e' stato aggiornato.
     pause
-    exit /b
+    exit /b 1
 )
 echo.
 
+echo [4/4] Pubblicazione su GitHub
+git add data birdsong_history.db birdsong_log.csv
+git diff --cached --quiet
+if errorlevel 1 (
+    git commit -q -m "Dati: aggiornamento del %date% %time:~0,5%"
+    echo       Dati salvati.
+) else (
+    echo       Nessun dato nuovo.
+)
+:: eventuali modifiche alle pagine o agli script finiscono in un commit separato
+git add -A
+git diff --cached --quiet
+if errorlevel 1 (
+    git commit -q -m "Sito: modifiche del %date% %time:~0,5%"
+    echo       Modifiche al sito salvate.
+)
+git push -q origin main
+if errorlevel 1 (
+    echo [X] Push su GitHub non riuscito. Controlla la connessione o GitHub Desktop.
+    pause
+    exit /b 1
+)
+echo.
 echo ============================================================
-echo 🟢 AGGIORNAMENTO LOCALE E CLOUD COMPLETATO CON SUCCESSO!
-echo    I dati e la mappa di birdsongtech sono ora online live.
+echo   FATTO. Il sito si aggiorna online entro un paio di minuti.
 echo ============================================================
 echo.
 pause

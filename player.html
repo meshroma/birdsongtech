@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Visualizzatore 3D · birdsongtech</title>
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<!--
+  Motore di visualizzazione basato su "Bird Song Visualization in 3D" di venomez-viper
+  https://github.com/venomez-viper/Bird-Song-Visualization-in-3D-
+  adattato per birdsongtech: audio dall'archivio di Torre Flavia, interfaccia in italiano,
+  punti e linee piu' luminosi.
+-->
+<style>
+:root{--grafite:#1c2124;--ardesia:#252b2f;--linea:#3b444a;--piuma:#8f989f;--testo:#eef0ee;--arancio:#f87e2e;--arancio-chiaro:#ffa25e;
+  --sans:'Montserrat',system-ui,-apple-system,'Segoe UI',sans-serif;--serif:'Source Serif 4',Georgia,serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0d0f;font-family:var(--sans);color:var(--testo)}
+canvas{position:fixed;inset:0;display:block}
+a{color:var(--arancio-chiaro)}
+:focus-visible{outline:2px solid var(--arancio);outline-offset:3px;border-radius:4px}
+
+/* ---- logo ---- */
+#marchio{position:fixed;top:16px;left:20px;z-index:30;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--testo)}
+#marchio img{height:38px;width:auto}
+#marchio span{font-size:18px;font-weight:600;letter-spacing:-.01em}
+#marchio b{font-weight:700}#marchio i{font-style:normal;font-weight:400}
+
+/* ---- scheda del rilevamento ---- */
+#scheda{position:fixed;top:72px;left:20px;width:310px;z-index:30;background:rgba(28,33,36,.88);border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:20px;backdrop-filter:blur(6px);max-height:calc(100% - 92px);overflow-y:auto}
+#scheda .nome{font-size:24px;font-weight:700;line-height:1.15}
+#scheda .sci{font-family:var(--serif);font-style:italic;color:var(--piuma);font-size:17px;margin-top:2px}
+#scheda dl{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:16px 0 0;font-size:14px}
+#scheda dt{color:var(--piuma)}
+#scheda dd{font-variant-numeric:tabular-nums}
+.conf{display:inline-flex;align-items:center;gap:8px}
+.conf i{display:block;width:50px;height:5px;border-radius:3px;background:var(--linea);overflow:hidden}
+.conf i b{display:block;height:100%;background:var(--arancio)}
+
+#comandi{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+.riga{display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:600 14px/1 var(--sans);text-decoration:none;cursor:pointer;
+  padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--testo)}
+.btn:hover{border-color:var(--arancio);color:#fff}
+.btn.primario{background:var(--arancio);border-color:var(--arancio);color:var(--grafite);flex:1}
+.btn.primario:hover{background:var(--arancio-chiaro)}
+.btn[aria-pressed="true"]{border-color:var(--arancio);color:var(--arancio-chiaro)}
+.btn:disabled{opacity:.4;cursor:default}
+#barra{width:100%;accent-color:var(--arancio);cursor:pointer}
+#tempo{font-size:13px;color:var(--piuma);font-variant-numeric:tabular-nums;white-space:nowrap}
+.collegamenti{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;margin-top:4px}
+#altri{margin-top:18px;border-top:1px solid var(--linea);padding-top:14px}
+#altri h2{font-size:13px;font-weight:500;color:var(--piuma);margin-bottom:8px}
+#altri ul{list-style:none;display:grid;gap:2px}
+#altri a{display:flex;justify-content:space-between;gap:10px;font-size:14px;text-decoration:none;color:var(--testo);padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+#altri a:hover{color:var(--arancio-chiaro)}
+#altri small{color:var(--piuma)}
+#errore{display:none;margin-top:12px;font-size:14px;color:#ffb38a}
+
+/* ---- avvio ---- */
+#avvio{position:fixed;inset:0;z-index:25;display:grid;place-items:center;pointer-events:none}
+#avvio button{pointer-events:auto;display:flex;align-items:center;gap:14px;font:600 18px/1 var(--sans);padding:20px 30px;border-radius:999px;border:none;cursor:pointer;
+  background:var(--arancio);color:var(--grafite);box-shadow:0 0 0 10px rgba(248,126,46,.16),0 0 60px rgba(248,126,46,.45)}
+#avvio button:hover{background:var(--arancio-chiaro)}
+#avvio svg{width:22px;height:22px}
+#avvio.nascosto{display:none}
+
+/* ---- scala delle frequenze e legenda (dal progetto originale, piu' luminose) ---- */
+#fscale{position:fixed;top:0;right:0;width:72px;height:100%;z-index:20;pointer-events:none}
+#cbar{position:absolute;right:42px;top:5%;height:90%;width:3px;border-radius:2px;
+  background:linear-gradient(to top,hsl(275,85%,50%) 0%,hsl(252,88%,60%) 13%,hsl(228,90%,62%) 24%,hsl(200,92%,60%) 33%,hsl(180,92%,56%) 42%,
+  hsl(158,90%,56%) 51%,hsl(128,88%,58%) 60%,hsl(92,90%,60%) 68%,hsl(62,90%,62%) 76%,hsl(38,85%,68%) 87%,hsl(20,30%,90%) 100%);
+  box-shadow:0 0 10px rgba(120,200,255,.35)}
+#flabels{position:absolute;right:46px;top:5%;height:90%}
+.fl{position:absolute;right:0;transform:translateY(50%);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.fl .tk{width:10px;height:2px;border-radius:1px;flex-shrink:0;display:inline-block}
+.fl .lx{font-size:12px;font-weight:600;color:rgba(255,255,255,.75);letter-spacing:.04em;font-family:ui-monospace,monospace}
+.axlabel{position:fixed;z-index:15;pointer-events:none;font-size:11px;font-style:italic;color:rgba(255,255,255,.45);transform:translate(-50%,-50%);white-space:nowrap}
+.ptlabel{position:fixed;z-index:22;pointer-events:none;font-size:12.5px;font-family:ui-monospace,monospace;font-weight:600;transform:translate(11px,-50%);white-space:nowrap;
+  background:rgba(10,13,15,.78);border-radius:3px;padding:2px 7px;border-left:2px solid currentColor;line-height:1.6;text-shadow:0 0 10px currentColor}
+#legenda{position:fixed;bottom:18px;right:90px;z-index:20;pointer-events:none;font-size:11.5px;line-height:1.9;color:rgba(255,255,255,.45);text-align:right}
+#mic-stato{display:none;align-items:center;gap:8px;font-size:13px;color:var(--piuma)}
+#mic-stato i{width:8px;height:8px;border-radius:50%;background:#ff5a4a;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,90,74,.5)}60%{box-shadow:0 0 0 6px rgba(255,90,74,0)}}
+
+@media (max-width:720px){
+  #scheda{top:auto;bottom:0;left:0;right:0;width:auto;border-radius:16px 16px 0 0;max-height:46%;padding:16px}
+  #altri,#legenda{display:none}
+  #fscale{transform:scale(.85);transform-origin:right center}
+  .ptlabel{font-size:11px}
+}
+@media (prefers-reduced-motion:reduce){#mic-stato i{animation:none}}
+</style>
+</head>
+<body>
+
+<canvas id="c" aria-label="Visualizzazione tridimensionale delle frequenze del canto"></canvas>
+
+<a id="marchio" href="index.html" title="Torna alla home"><img src="assets/logo-simbolo.png" alt="" width="40" height="38"><span><b>birdsong</b><i>tech</i></span></a>
+
+<aside id="scheda" aria-live="polite">
+  <div class="nome" id="s-nome">Visualizzatore 3D</div>
+  <div class="sci" id="s-sci"></div>
+  <dl id="s-dati"></dl>
+  <div id="comandi">
+    <div class="riga">
+      <button class="btn primario" id="b-play" type="button" disabled>Ascolta</button>
+      <button class="btn" id="b-loop" type="button" aria-pressed="true" title="Ripeti il canto in continuo">Ripeti</button>
+    </div>
+    <div class="riga">
+      <input id="barra" type="range" min="0" max="1000" value="0" aria-label="Posizione nel canto" disabled>
+      <span id="tempo">0:00 / 0:00</span>
+    </div>
+    <div class="riga">
+      <button class="btn" id="b-mic" type="button" aria-pressed="false">Usa il microfono</button>
+      <span id="mic-stato"><i></i>in ascolto</span>
+    </div>
+    <div class="collegamenti">
+      <a id="l-scarica" href="#" download hidden>Scarica il file .wav</a>
+      <a href="archivio.html">Torna all'archivio</a>
+    </div>
+    <p id="errore" role="alert"></p>
+  </div>
+  <div id="altri" hidden><h2 id="altri-titolo">Altri canti della stessa specie</h2><ul id="altri-lista"></ul></div>
+</aside>
+
+<div id="avvio" class="nascosto"><button type="button" id="b-avvio">
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 4.5a5 5 0 0 0 0 7"/><path d="M3.2 2a9 9 0 0 0 0 12"/><path d="M8.8 6.6a2 2 0 0 0 0 2.8"/></svg>
+  Ascolta e guarda il canto</button></div>
+
+<div id="fscale"><div id="cbar"></div><div id="flabels"></div></div>
+<div id="legenda">
+  <div>Altezza: frequenza (scala logaritmica)</div>
+  <div>Larghezza: tempo</div>
+  <div>Profondità: intensità</div>
+  <div>Colore: banda di frequenza</div>
+  <div>Trascina per ruotare, rotella per lo zoom</div>
+</div>
+
+<script src="data/rilevamenti.js"></script>
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/OrbitControls.js"></script>
+<script>
+'use strict';
+
+/* ════════════════ Scelta del canto da riprodurre ════════════════
+   player.html?id=<id>          rilevamento dell'archivio
+   player.html?demo=1           canto dimostrativo
+   player.html?audio=..&specie=..  vecchi link (compatibilita')          */
+const DATI = window.BIRDSONG || {rilevamenti:[]};
+const Q = new URLSearchParams(location.search);
+const MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dataLunga=iso=>{if(!iso)return'';const[a,m,g]=iso.split('-').map(Number);return `${g} ${MESI[m-1]} ${a}`;};
+const nomeNodo=n=>String(n||'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+
+let canto=null;     // {titolo, sci, audio, record}
+if(Q.get('id')){
+  const r=DATI.rilevamenti.find(x=>x.id===Q.get('id'));
+  if(r) canto={titolo:r.specie,sci:r.sci,audio:r.audio,record:r};
+}else if(Q.get('audio')){
+  canto={titolo:Q.get('specie')||'Canto',sci:Q.get('meta')||'',audio:Q.get('audio'),record:null};
+}
+if(!canto && (Q.get('demo') || !Q.get('id'))){
+  const r=DATI.rilevamenti.find(x=>x.audio);
+  canto = Q.get('demo')||!r
+    ? {titolo:'Canto dimostrativo',sci:'Registrazione di prova',audio:'canto.wav',record:null}
+    : {titolo:r.specie,sci:r.sci,audio:r.audio,record:r};
+}
+
+const $=id=>document.getElementById(id);
+function mostraErrore(t){$('errore').textContent=t;$('errore').style.display='block';}
+
+(function riempiScheda(){
+  if(!canto){
+    $('s-nome').textContent='Canto non trovato';
+    mostraErrore("Il rilevamento richiesto non è nell'archivio. Torna all'archivio e scegline un altro.");
+    return;
+  }
+  document.title=`${canto.titolo} · Visualizzatore 3D · birdsongtech`;
+  $('s-nome').textContent=canto.titolo;
+  $('s-sci').textContent=canto.sci;
+  const r=canto.record;
+  if(r){
+    const righe=[
+      ['Quando',`${dataLunga(r.data)}, ore ${r.ora.slice(0,5)}`],
+      ['Dove',esc(nomeNodo(r.nodo))],
+      ['Affidabilità',`<span class="conf"><i><b style="width:${Math.round(r.score*100)}%"></b></i>${Math.round(r.score*100)}%</span>`],
+    ];
+    if(r.temperatura!=null||r.pressione!=null) righe.push(['Meteo',[r.temperatura!=null?r.temperatura+' °C':null,r.pressione!=null?r.pressione+' hPa':null].filter(Boolean).join(', ')]);
+    if(r.quota!=null) righe.push(['Quota',r.quota+' m s.l.m.']);
+    $('s-dati').innerHTML=righe.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('');
+    /* altri canti della stessa specie con audio */
+    const altri=DATI.rilevamenti.filter(x=>x.specie===r.specie&&x.audio&&x.id!==r.id).slice(0,6);
+    if(altri.length){
+      $('altri').hidden=false;
+      $('altri-lista').innerHTML=altri.map(x=>`<li><a href="player.html?id=${encodeURIComponent(x.id)}"><span>${dataLunga(x.data)}</span><small>ore ${x.ora.slice(0,5)}</small></a></li>`).join('');
+    }
+  }
+  if(canto.audio){
+    $('b-play').disabled=false;
+    $('l-scarica').href=canto.audio; $('l-scarica').hidden=false;
+    $('avvio').classList.remove('nascosto');
+  }else{
+    mostraErrore("L'audio di questo canto non è ancora stato scaricato dalla stazione. Sarà disponibile dopo il prossimo aggiornamento dell'archivio.");
+  }
+})();
+
+/* ════════════════ Motore di visualizzazione ════════════════ */
+const FFT_SIZE    = 2048;
+const MAX_POINTS  = 8000;  // basta per un canto di 16 s (durata massima dei file della XIAO)  // le registrazioni reali hanno molti picchi: piu' punti visibili
+const FREQ_LO     = 400;
+const FREQ_HI     = 12000;
+const WORLD_HALF  = 2.0;
+const PT_LIFE     = 16.0;
+const MIC_WINDOW  = 16.0;
+const PEAK_THRESH = 92;
+const SRATE       = 0.080;
+const BIN_COOLDOWN= 0.45;
+/* luminosita' (aumentata rispetto all'originale) */
+const LUCE_PUNTI_SPENTI = 0.22;   // originale 0.03
+const LUCE_SCIA         = 0.62;   // originale 0.20
+const LUCE_LINEA        = 1.6;    // moltiplicatore della linea che viaggia
+
+const LOG_LO = Math.log(FREQ_LO);
+const LOG_RNG= Math.log(FREQ_HI) - LOG_LO;
+function fToY(hz){ return ((Math.log(hz)-LOG_LO)/LOG_RNG)*(WORLD_HALF*2)-WORLD_HALF; }
+
+const CS=[
+  {at:0,h:275,s:.85,l:.50},{at:.14,h:248,s:.88,l:.60},{at:.28,h:220,s:.90,l:.62},{at:.43,h:190,s:.92,l:.60},
+  {at:.56,h:158,s:.90,l:.56},{at:.68,h:128,s:.88,l:.56},{at:.79,h:92,s:.90,l:.58},{at:.88,h:60,s:.90,l:.62},
+  {at:.94,h:35,s:.85,l:.68},{at:1,h:18,s:.30,l:.90},
+];
+function specColor(t){
+  t=Math.max(0,Math.min(1,t));
+  let a=CS[0],b=CS[CS.length-1];
+  for(let i=0;i<CS.length-1;i++) if(t>=CS[i].at&&t<=CS[i+1].at){a=CS[i];b=CS[i+1];break;}
+  const f=(b.at===a.at)?0:(t-a.at)/(b.at-a.at);
+  return new THREE.Color().setHSL((a.h+f*(b.h-a.h))/360,a.s+f*(b.s-a.s),a.l+f*(b.l-a.l));
+}
+function fToCol(hz){return specColor((Math.log(hz)-LOG_LO)/LOG_RNG);}
+
+const canvas=$('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.setClearColor(0x0a0d0f);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.01,100);
+camera.position.set(-0.6,0.35,innerWidth<720?7.6:6.4);
+const ctrl=new THREE.OrbitControls(camera,canvas);
+ctrl.enableDamping=true;ctrl.dampingFactor=0.06;ctrl.enablePan=false;ctrl.minDistance=2.5;ctrl.maxDistance=18;
+/* sposta il centro della scena a destra della scheda informativa (solo schermi larghi) */
+function inquadra(){
+  renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;
+  if(innerWidth>720) camera.setViewOffset(innerWidth,innerHeight,-150,0,innerWidth,innerHeight); else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+}
+inquadra();
+addEventListener('resize',inquadra);
+const grp=new THREE.Group(); scene.add(grp);
+
+/* assi */
+(function(){
+  const v=[],c=[];
+  function seg(ax,ay,az,bx,by,bz,r,g,b){v.push(ax,ay,az,bx,by,bz);c.push(r,g,b,r,g,b);}
+  seg(0,-2.5,0,0,2.5,0,.20,.55,.60);
+  seg(-2.5,0,0,2.5,0,0,.30,.30,.30);
+  seg(0,0,-2.5,0,0,2.5,.22,.22,.22);
+  [400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000,6300,8000,10000,12000].forEach(hz=>{
+    const y=fToY(hz),col=fToCol(hz),major=[400,1000,2000,4000,8000,12000].includes(hz);
+    const len=major?.14:.07,dim=major?.75:.35;
+    seg(-len,y,0,len,y,0,col.r*dim,col.g*dim,col.b*dim);
+  });
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(v),3));
+  geo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(c),3));
+  grp.add(new THREE.LineSegments(geo,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending})));
+})();
+
+const AX=[
+  {id:'alFreq',p:new THREE.Vector3(.18,2.65,0),t:'frequenza (log)'},
+  {id:'alLow',p:new THREE.Vector3(.18,-2.60,0),t:'400 Hz'},
+  {id:'alX',p:new THREE.Vector3(2.65,.14,0),t:'tempo →'},
+  {id:'alZ',p:new THREE.Vector3(0,.14,2.65),t:'intensità'},
+];
+AX.forEach(({id,t})=>{const el=document.createElement('div');el.id=id;el.className='axlabel';el.textContent=t;document.body.appendChild(el);});
+const _v3=new THREE.Vector3();
+function projectAxLabels(){
+  AX.forEach(({id,p})=>{
+    _v3.copy(p).applyMatrix4(grp.matrixWorld).project(camera);
+    const el=$(id);if(!el)return;
+    el.style.left=((_v3.x+1)/2*innerWidth)+'px';el.style.top=((-_v3.y+1)/2*innerHeight)+'px';el.style.opacity=_v3.z<1?'1':'0';
+  });
+}
+
+/* etichette delle frequenze sui punti */
+const MAX_PT_LABELS=18;
+const ptLabels=Array.from({length:MAX_PT_LABELS},()=>{const el=document.createElement('div');el.className='ptlabel';el.style.display='none';document.body.appendChild(el);return el;});
+function updatePtLabels(liveArr){
+  let shown=0;const occupati=[];
+  const scheda=$('scheda').getBoundingClientRect();
+  liveArr.sort((a,b)=>(b.pi===activeIdx)-(a.pi===activeIdx)||b.br-a.br);   // prima la nota attiva, poi le piu' luminose
+  for(let k=0;k<liveArr.length&&shown<MAX_PT_LABELS;k++){
+    const pt=liveArr[k];
+    if(!pt.lbl) continue;
+    _v3.set(pt.p.x,pt.p.y,pt.p.z).applyMatrix4(grp.matrixWorld).project(camera);
+    if(_v3.z>=1) continue;          // dietro la telecamera
+    const sx=(_v3.x+1)/2*innerWidth, sy=(-_v3.y+1)/2*innerHeight;
+    if(sx<50||sx>innerWidth-85||sy<10||sy>innerHeight-40) continue;
+    if(sx>scheda.left-10&&sx<scheda.right&&sy>scheda.top&&sy<scheda.bottom) continue;
+    if(occupati.some(([x,y])=>Math.abs(x-sx)<95&&Math.abs(y-sy)<22)) continue;   // niente etichette sovrapposte
+    occupati.push([sx,sy]);
+    const el=ptLabels[shown++];
+    const hz=pt.p.hz;
+    el.textContent=hz>=1000?(hz/1000).toFixed(2)+'k Hz':Math.round(hz)+' Hz';
+    const sc=fToCol(hz),ri=Math.round(sc.r*255),gi=Math.round(sc.g*255),bi=Math.round(sc.b*255);
+    el.style.color=`rgb(${ri},${gi},${bi})`;el.style.borderColor=`rgba(${ri},${gi},${bi},0.8)`;
+    el.style.opacity=pt.pi===activeIdx?'1':String(Math.min(1,pt.br*5));
+    el.style.left=sx+'px';el.style.top=sy+'px';el.style.display='block';
+  }
+  for(let i=shown;i<MAX_PT_LABELS;i++) ptLabels[i].style.display='none';
+}
+
+/* punti */
+const posA=new Float32Array(MAX_POINTS*3), colA=new Float32Array(MAX_POINTS*3), sizeA=new Float32Array(MAX_POINTS).fill(1);
+const ptGeo=new THREE.BufferGeometry();
+const pPA=new THREE.BufferAttribute(posA,3), pCA=new THREE.BufferAttribute(colA,3), pSA=new THREE.BufferAttribute(sizeA,1);
+ptGeo.setAttribute('position',pPA);ptGeo.setAttribute('aColor',pCA);ptGeo.setAttribute('aSize',pSA);
+grp.add(new THREE.Points(ptGeo,new THREE.ShaderMaterial({
+  vertexShader:`attribute vec3 aColor;attribute float aSize;varying vec3 vCol;
+    void main(){vCol=aColor;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=aSize*(300.0/-mv.z);gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`varying vec3 vCol;
+    void main(){vec2 uv=gl_PointCoord-vec2(0.5);float r=length(uv);if(r>0.5)discard;
+      float core=1.0-smoothstep(0.0,0.20,r);float rim=1.0-smoothstep(0.20,0.50,r);
+      float a=core*1.0+rim*0.55;gl_FragColor=vec4(vCol*a*1.25,a);}`,
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending
+})));
+
+/* linea che viaggia tra le note dominanti + scia persistente */
+function snapPos(p){return{x:p.x,y:p.y,z:p.z,r:p.r,g:p.g,b:p.b};}
+let lineFrom={x:0,y:-2,z:0,r:.4,g:.4,b:.4}, lineTo={x:0,y:-2,z:0,r:.4,g:.4,b:.4};
+let lineProgress=1.0, lineSpeedUPS=4.0, activeIdx=-1, lastDomHz=0;
+const tLinePos=new Float32Array(6), tLineCol=new Float32Array(6), tLineGeo=new THREE.BufferGeometry();
+tLineGeo.setAttribute('position',new THREE.BufferAttribute(tLinePos,3));
+tLineGeo.setAttribute('color',new THREE.BufferAttribute(tLineCol,3));
+tLineGeo.setDrawRange(0,0);
+const lineMat=new THREE.LineBasicMaterial({vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+grp.add(new THREE.LineSegments(tLineGeo,lineMat));
+grp.add(new THREE.LineSegments(tLineGeo,lineMat));   // disegnata due volte: piu' luminosa
+
+const MAX_TRAIL=180, trailSegs=[];
+const trailPos=new Float32Array(MAX_TRAIL*6), trailCol=new Float32Array(MAX_TRAIL*6), trailGeo=new THREE.BufferGeometry();
+const trlPA=new THREE.BufferAttribute(trailPos,3), trlCA=new THREE.BufferAttribute(trailCol,3);
+trailGeo.setAttribute('position',trlPA);trailGeo.setAttribute('color',trlCA);
+grp.add(new THREE.LineSegments(trailGeo,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending})));
+
+function triggerLine(){
+  if(!fftBuf)return;
+  const BW=actx.sampleRate/FFT_SIZE;
+  let maxV=0,maxHz=0;
+  for(let b=1;b<fftBuf.length-1;b++){
+    const v=fftBuf[b];if(v<PEAK_THRESH)continue;
+    const hz=b*BW;if(hz<FREQ_LO||hz>FREQ_HI)continue;
+    if(v>maxV){maxV=v;maxHz=hz;}
+  }
+  if(maxHz===0)return;
+  const tgtY=fToY(maxHz), yTol=Math.log(1.0595)/LOG_RNG*(WORLD_HALF*2);
+  let bestIdx=-1,bestX=-Infinity;
+  for(let i=0;i<MAX_POINTS;i++){
+    if(!pool[i].alive)continue;
+    if(Math.abs(pool[i].y-tgtY)>yTol)continue;
+    if(pool[i].x>bestX){bestX=pool[i].x;bestIdx=i;}
+  }
+  if(bestIdx<0)return;
+  if(bestIdx===activeIdx){lastDomHz=maxHz;return;}
+  const t=Math.min(1,lineProgress);
+  if(lastDomHz>0){
+    trailSegs.push({fx:lineFrom.x,fy:lineFrom.y,fz:lineFrom.z,
+      tx:lineFrom.x+t*(lineTo.x-lineFrom.x),ty:lineFrom.y+t*(lineTo.y-lineFrom.y),tz:lineFrom.z+t*(lineTo.z-lineFrom.z),
+      fr:lineFrom.r,fg:lineFrom.g,fb:lineFrom.b,tr:lineTo.r,tg:lineTo.g,tb:lineTo.b,age:0,maxAge:55.0});
+    if(trailSegs.length>MAX_TRAIL)trailSegs.shift();
+  }
+  lineFrom={x:lineFrom.x+t*(lineTo.x-lineFrom.x),y:lineFrom.y+t*(lineTo.y-lineFrom.y),z:lineFrom.z+t*(lineTo.z-lineFrom.z),
+    r:lineFrom.r+t*(lineTo.r-lineFrom.r),g:lineFrom.g+t*(lineTo.g-lineFrom.g),b:lineFrom.b+t*(lineTo.b-lineFrom.b)};
+  lineTo=snapPos(pool[bestIdx]);activeIdx=bestIdx;lastDomHz=maxHz;lineProgress=0;
+  lineSpeedUPS=0.45+(maxV/255)*0.85;
+}
+
+const pool=Array.from({length:MAX_POINTS},()=>({alive:false,x:0,y:0,z:0,r:0,g:0,b:0,age:0,life:0,amp:0,hz:0}));
+
+/* posizione orizzontale = tempo. Per i file: posizione nel canto; per il microfono: finestra di 16 s */
+function xFracAdesso(){
+  if(modo==='file'&&audioEl&&isFinite(audioEl.duration)&&audioEl.duration>0){
+    const win=Math.max(4,Math.min(16,audioEl.duration));
+    return (audioEl.currentTime%win)/win;
+  }
+  const el=actx?(actx.currentTime-songStartTime):0;
+  return Math.min(1,(el%MIC_WINDOW)/MIC_WINDOW);
+}
+function spawnPoint(hz,amp){
+  let slot=null;
+  for(let i=0;i<MAX_POINTS;i++) if(!pool[i].alive){slot=pool[i];break;}
+  if(!slot){let old=pool[0];for(let i=1;i<MAX_POINTS;i++)if(pool[i].age>old.age)old=pool[i];slot=old;}
+  const col=fToCol(hz);
+  slot.alive=true;slot.hz=hz;
+  slot.x=xFracAdesso()*(WORLD_HALF*2)-WORLD_HALF;
+  slot.y=fToY(hz);slot.z=amp*1.2;
+  slot.r=col.r;slot.g=col.g;slot.b=col.b;slot.age=0;slot.life=PT_LIFE;slot.amp=amp;
+}
+
+/* ════════════════ Audio ════════════════ */
+let actx=null,anlsr=null,fftBuf=null,binLastSpawn=null;
+let audioEl=null,mediaSrc=null,micSrc=null,micStream=null,modo=null,songStartTime=0;
+
+function ensureAudio(){
+  if(!actx){
+    actx=new(window.AudioContext||window.webkitAudioContext)();
+    anlsr=actx.createAnalyser();anlsr.fftSize=FFT_SIZE;anlsr.smoothingTimeConstant=.80;
+    fftBuf=new Uint8Array(anlsr.frequencyBinCount);binLastSpawn=new Float32Array(anlsr.frequencyBinCount);
+  }
+  if(actx.state==='suspended')actx.resume();
+}
+function pulisciScena(){
+  trailSegs.length=0;activeIdx=-1;lastDomHz=0;lineProgress=1.0;
+  tLineGeo.setDrawRange(0,0);trailGeo.setDrawRange(0,0);
+  pool.forEach(p=>p.alive=false);
+}
+
+function preparaFile(){
+  if(audioEl)return;
+  audioEl=new Audio();
+  audioEl.crossOrigin='anonymous';   // necessario se l'audio sta su un altro servizio (CORS)
+  audioEl.preload='auto';audioEl.loop=$('b-loop').getAttribute('aria-pressed')==='true';
+  audioEl.src=canto.audio;
+  audioEl.addEventListener('timeupdate',aggiornaTempo);
+  audioEl.addEventListener('loadedmetadata',aggiornaTempo);
+  audioEl.addEventListener('play',()=>{$('b-play').textContent='Pausa';});
+  audioEl.addEventListener('pause',()=>{$('b-play').textContent='Ascolta';});
+  audioEl.addEventListener('ended',()=>{$('b-play').textContent='Ascolta di nuovo';});
+  audioEl.addEventListener('error',ripiegoSenzaAnalisi,{once:true});
+  ensureAudio();
+  mediaSrc=actx.createMediaElementSource(audioEl);
+  mediaSrc.connect(anlsr);
+  $('barra').disabled=false;
+}
+/* Se il servizio che ospita l'audio non concede l'analisi (CORS), il file si sente comunque
+   ma senza animazione: un secondo lettore non collegato all'analizzatore. */
+let lettoreSemplice=null;
+function ripiegoSenzaAnalisi(){
+  if(lettoreSemplice)return;
+  lettoreSemplice=new Audio(canto.audio);
+  lettoreSemplice.loop=$('b-loop').getAttribute('aria-pressed')==='true';
+  lettoreSemplice.addEventListener('error',()=>mostraErrore('Impossibile caricare il file audio. Riprova più tardi.'));
+  lettoreSemplice.addEventListener('timeupdate',()=>{$('tempo').textContent=fmt(lettoreSemplice.currentTime)+' / '+fmt(lettoreSemplice.duration);});
+  lettoreSemplice.addEventListener('play',()=>{$('b-play').textContent='Pausa';});
+  lettoreSemplice.addEventListener('pause',()=>{$('b-play').textContent='Ascolta';});
+  audioEl=null;
+  $('barra').disabled=true;
+  mostraErrore("Il canto si sente, ma l'animazione 3D non è disponibile per questo file: il servizio che lo ospita non ne permette l'analisi.");
+  lettoreSemplice.play().catch(()=>{});
+}
+async function suonaFile(){
+  if(lettoreSemplice){ lettoreSemplice.paused?lettoreSemplice.play():lettoreSemplice.pause(); return; }
+  if(!canto||!canto.audio)return;
+  if(modo==='mic')fermaMic();
+  ensureAudio();
+  try{anlsr.disconnect();}catch(e){}           // dopo il microfono: riconnetti gli altoparlanti
+  preparaFile();
+  anlsr.connect(actx.destination);
+  if(modo!=='file'){pulisciScena();modo='file';}
+  $('avvio').classList.add('nascosto');
+  try{await audioEl.play();}catch(e){mostraErrore('Il browser ha bloccato la riproduzione: premi di nuovo "Ascolta".');}
+}
+function fmt(s){if(!isFinite(s))return'0:00';s=Math.floor(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function aggiornaTempo(){
+  if(!audioEl)return;
+  $('tempo').textContent=fmt(audioEl.currentTime)+' / '+fmt(audioEl.duration);
+  if(isFinite(audioEl.duration)&&audioEl.duration>0) $('barra').value=Math.round(audioEl.currentTime/audioEl.duration*1000);
+}
+$('barra').addEventListener('input',e=>{if(audioEl&&isFinite(audioEl.duration))audioEl.currentTime=e.target.value/1000*audioEl.duration;});
+$('b-play').addEventListener('click',()=>{
+  if(!lettoreSemplice&&audioEl&&modo==='file'&&!audioEl.paused){audioEl.pause();return;}
+  suonaFile();
+});
+$('b-avvio').addEventListener('click',suonaFile);
+$('b-loop').addEventListener('click',e=>{
+  const on=e.currentTarget.getAttribute('aria-pressed')!=='true';
+  e.currentTarget.setAttribute('aria-pressed',String(on));
+  if(audioEl)audioEl.loop=on;
+  if(lettoreSemplice)lettoreSemplice.loop=on;
+});
+
+/* microfono: per far "vedere" ai visitatori la propria voce o i suoni intorno */
+function fermaMic(){
+  if(micSrc){micSrc.disconnect();micSrc=null;}
+  if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;}
+  modo=null;
+  $('b-mic').setAttribute('aria-pressed','false');$('b-mic').textContent='Usa il microfono';$('mic-stato').style.display='none';
+}
+$('b-mic').addEventListener('click',async()=>{
+  if(modo==='mic'){fermaMic();return;}
+  ensureAudio();
+  try{
+    micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    if(audioEl)audioEl.pause();
+    try{anlsr.disconnect();}catch(e){}         // niente eco del microfono negli altoparlanti
+    micSrc=actx.createMediaStreamSource(micStream);micSrc.connect(anlsr);
+    pulisciScena();modo='mic';songStartTime=actx.currentTime;
+    $('avvio').classList.add('nascosto');
+    $('b-mic').setAttribute('aria-pressed','true');$('b-mic').textContent='Ferma il microfono';$('mic-stato').style.display='inline-flex';
+  }catch(e){mostraErrore("Accesso al microfono non consentito. Puoi abilitarlo dalle impostazioni del browser.");}
+});
+
+function sampleFFT(){
+  if(!anlsr||!fftBuf||!modo)return;
+  if(modo==='file'&&(!audioEl||audioEl.paused))return;
+  anlsr.getByteFrequencyData(fftBuf);
+  const BW=actx.sampleRate/FFT_SIZE, now=actx.currentTime;
+  for(let b=1;b<fftBuf.length-1;b++){
+    const v=fftBuf[b];
+    if(v<PEAK_THRESH)continue;
+    if(v<=fftBuf[b-1]&&v<=fftBuf[b+1])continue;
+    if(now-binLastSpawn[b]<BIN_COOLDOWN)continue;
+    const hz=b*BW;if(hz<FREQ_LO||hz>FREQ_HI)continue;
+    binLastSpawn[b]=now;spawnPoint(hz,v/255);
+  }
+  computeHPS();triggerLine();
+}
+
+/* scala delle frequenze */
+const flC=$('flabels');
+[400,1000,2000,4000,8000,12000].forEach(hz=>{
+  const t=(Math.log(hz)-LOG_LO)/LOG_RNG,c=fToCol(hz);
+  const hex='#'+[c.r,c.g,c.b].map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('');
+  const el=document.createElement('div');el.className='fl';el.style.bottom=(t*100)+'%';
+  el.innerHTML=`<span class="lx">${hz>=1000?hz/1000+'k':hz}</span><span class="tk" style="background:${hex}"></span>`;
+  flC.appendChild(el);
+});
+
+/* Harmonic Product Spectrum: fondamentale reale */
+let fundHz=0;
+function computeHPS(){
+  if(!fftBuf||!actx)return;
+  const BW=actx.sampleRate/FFT_SIZE,minB=Math.ceil(FREQ_LO/BW),maxB=Math.floor(FREQ_HI/BW);
+  let bestScore=0,bestHz=0;
+  for(let b=minB;b<=maxB;b++){
+    let score=0;
+    for(let h=1;h<=5;h++){const hb=Math.round(b*h);if(hb<fftBuf.length)score+=fftBuf[hb]*(1/h);}
+    if(score>bestScore){bestScore=score;bestHz=b*BW;}
+  }
+  if(bestHz>0)fundHz=bestHz;
+}
+function harmonicScore(hz,domHz){
+  if(!domHz||!hz)return 0;
+  const r=hz/domHz;let best=0;
+  for(let n=1;n<=6;n++){const dev=Math.abs(r-n)/n;const s=Math.max(0,1-dev*9)*(1/Math.sqrt(n));if(s>best)best=s;}
+  return Math.min(1,best);
+}
+
+/* ════════════════ Ciclo di disegno ════════════════ */
+const clock=new THREE.Clock();
+let sT=0;
+const ruota=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.1);
+  if(ruota)grp.rotation.y+=0.00022;
+  ctrl.update();
+  sT+=dt;if(sT>=SRATE){sampleFFT();sT=0;}
+  const fermo=modo==='file'&&audioEl&&audioEl.paused;   // in pausa i punti non invecchiano
+  let live=0;const lv=[];
+  for(let i=0;i<MAX_POINTS;i++){
+    const p=pool[i];if(!p.alive)continue;
+    if(!fermo)p.age+=dt;
+    if(p.age>=p.life){p.alive=false;continue;}
+    const decay=Math.pow(1-p.age/p.life,1.15);
+    const hScore=harmonicScore(p.hz,fundHz);
+    let bf,sz,lbl=false;
+    if(i===activeIdx){
+      const arrived=Math.min(1,lineProgress*2.0);
+      bf=Math.max(.5,arrived)*(1.0+p.amp*1.6);sz=0.30+p.amp*0.16;lbl=true;
+    }else if(hScore>0.05){
+      bf=Math.max(decay*hScore*(0.85+p.amp*0.7),LUCE_PUNTI_SPENTI);sz=0.11+hScore*0.15;lbl=bf>0.3;
+    }else{
+      bf=decay*LUCE_PUNTI_SPENTI+0.04;sz=0.075;
+    }
+    const s=live;
+    posA[s*3]=p.x;posA[s*3+1]=p.y;posA[s*3+2]=p.z;
+    const wb=Math.max(0,bf-.88)*2.2;
+    colA[s*3]=Math.min(1,p.r*bf+wb);colA[s*3+1]=Math.min(1,p.g*bf+wb);colA[s*3+2]=Math.min(1,p.b*bf+wb);
+    sizeA[s]=sz;
+    if(lbl)lv.push({i:s,br:bf,p,pi:i,lbl});live++;
+  }
+  ptGeo.setDrawRange(0,live);pPA.needsUpdate=true;pCA.needsUpdate=true;pSA.needsUpdate=true;
+
+  if(lineProgress<1.0&&lastDomHz>0&&!fermo){
+    const dx=lineTo.x-lineFrom.x,dy=lineTo.y-lineFrom.y,dz=lineTo.z-lineFrom.z,dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
+    lineProgress=dist>0.001?Math.min(1.0,lineProgress+dt*lineSpeedUPS/dist):1.0;
+  }
+  if(lastDomHz>0){
+    const t=Math.min(1,lineProgress);
+    tLinePos[0]=lineFrom.x;tLinePos[1]=lineFrom.y;tLinePos[2]=lineFrom.z;
+    tLinePos[3]=lineFrom.x+t*(lineTo.x-lineFrom.x);tLinePos[4]=lineFrom.y+t*(lineTo.y-lineFrom.y);tLinePos[5]=lineFrom.z+t*(lineTo.z-lineFrom.z);
+    const L=LUCE_LINEA;
+    tLineCol[0]=Math.min(1,lineFrom.r*L);tLineCol[1]=Math.min(1,lineFrom.g*L);tLineCol[2]=Math.min(1,lineFrom.b*L);
+    tLineCol[3]=Math.min(1,lineTo.r*L);tLineCol[4]=Math.min(1,lineTo.g*L);tLineCol[5]=Math.min(1,lineTo.b*L);
+    tLineGeo.attributes.position.needsUpdate=true;tLineGeo.attributes.color.needsUpdate=true;tLineGeo.setDrawRange(0,2);
+  }
+  let tl=0;
+  for(let i=trailSegs.length-1;i>=0;i--){ if(!fermo)trailSegs[i].age+=dt; if(trailSegs[i].age>trailSegs[i].maxAge)trailSegs.splice(i,1); }
+  for(let i=0;i<trailSegs.length&&tl<MAX_TRAIL;i++){
+    const s=trailSegs[i],life=s.age/s.maxAge;
+    const fade=life<0.8?LUCE_SCIA:LUCE_SCIA*(1-(life-0.8)/0.2);
+    trailPos[tl*6]=s.fx;trailPos[tl*6+1]=s.fy;trailPos[tl*6+2]=s.fz;trailPos[tl*6+3]=s.tx;trailPos[tl*6+4]=s.ty;trailPos[tl*6+5]=s.tz;
+    trailCol[tl*6]=s.fr*fade;trailCol[tl*6+1]=s.fg*fade;trailCol[tl*6+2]=s.fb*fade;
+    trailCol[tl*6+3]=s.tr*fade;trailCol[tl*6+4]=s.tg*fade;trailCol[tl*6+5]=s.tb*fade;
+    tl++;
+  }
+  trlPA.needsUpdate=true;trlCA.needsUpdate=true;trailGeo.setDrawRange(0,tl*2);
+  grp.updateMatrixWorld(true);
+  projectAxLabels();updatePtLabels(lv);
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>

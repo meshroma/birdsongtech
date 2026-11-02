@@ -1,0 +1,14 @@
+[Unit]
+Description=Gateway Meshtastic Birdsong Torre Flavia
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi
+ExecStart=/home/pi/mesh_env/bin/python /home/pi/gateway.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
