@@ -12,7 +12,8 @@ def genera():
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
     try:
-        cur.execute("SELECT timestamp, nodo, specie, conf, batteria, temperatura, pressione, gps_lat, gps_lon, altitudine_mslm, audio FROM rilevamenti_bioacustici ORDER BY timestamp DESC")
+        # Interroghiamo il DB usando i nomi esatti delle colonne reali
+        cur.execute("SELECT timestamp, nodo, specie_ita, score_tinyml, batteria_perc, temperatura, pressione, altitudine_mslm, audio_url FROM rilevamenti_bioacustici ORDER BY timestamp DESC")
         righe = cur.fetchall()
     except Exception as e:
         print("Errore query:", e)
@@ -22,7 +23,7 @@ def genera():
     
     tabella_html = ""
     for r in righe:
-        timestamp, nodo, specie, conf, batt, temp, press, lat, lon, alt, audio = r
+        timestamp, nodo, specie, conf, batt, temp, press, alt, audio = r
         conf_perc = f"{int(conf * 100)}%" if conf else "N/D"
         
         if audio and not audio.startswith("http"):
