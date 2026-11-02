@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>Birdsong Tech - 3D Neon Spectrogram</title>
     <style>
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -10,90 +10,105 @@
         canvas{position:fixed;inset:0;display:block}
         #top-bar{position:fixed;top:14px;left:20px;z-index:20;font-size:16px;font-weight:bold;letter-spacing:.1em;color:#33ff88;text-shadow:0 0 10px rgba(51,255,136,0.8)}
         #legend{position:fixed;bottom:20px;left:20px;z-index:20;font-size:10px;line-height:1.8;color:rgba(255,255,255,0.4)}
-        #fscale{position:fixed;top:0;right:0;width:80px;height:100%;z-index:20;pointer-events:none}
-        #cbar{position:absolute;right:40px;top:10%;height:80%;width:4px;border-radius:2px;background:linear-gradient(to top,#f0f,#00f,#0f0,#ff0,#f00)}
+        #btn-play{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;padding:15px 30px;background:#33ff88;color:#020405;border:none;font-weight:bold;border-radius:4px;cursor:pointer;box-shadow:0 0 20px #33ff88;display:none;font-family:monospace;letter-spacing:1px;}
+        #hint{position:fixed;top:60%;left:50%;transform:translate(-50%,-50%);font-style:italic;color:rgba(255,255,255,0.3);z-index:5}
     </style>
 </head>
 <body>
     <canvas id="c"></canvas>
     <div id="top-bar"><div id="bname">ATTESA EVENTI BIOACUSTICI...</div></div>
+    <button id="btn-play" onclick="startAudio()">⚡ ACCENDI SPETTROGRAMMA NEON</button>
+    <div id="hint"><p id="msg-stato">In attesa del flusso dai parametri URL...</p></div>
     <div id="legend">
         <div>Y - FREQUENZA NEON (LOG SCALE 400Hz - 12kHz)</div>
         <div>X - AVANZAMENTO TEMPORALE (FINESTRA SCORREVOLE)</div>
         <div>Z - INTENSITA SPETTRALE (PROFONDITA VETTORIALE)</div>
     </div>
-    <div id="fscale"><div id="cbar"></div></div>
     <script src="https://cloudflare.com"></script>
     <script src="https://jsdelivr.net"></script>
     <script>
-        const params=new URLSearchParams(window.location.search);
-        const audioUrl=params.get("audio");
-        const specieName=params.get("specie");
-        if(specieName) document.getElementById("bname").textContent=specieName.toUpperCase();
+        const params = new URLSearchParams(window.location.search);
+        const audioUrl = params.get("audio");
+        const specieName = params.get("specie");
+        if(specieName) document.getElementById("bname").textContent = specieName.toUpperCase();
 
-        const scene=new THREE.Scene();
-        const camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,100);
-        camera.position.set(0,2,6);
-        const renderer=new THREE.WebGLRenderer({canvas:document.getElementById("c"),antialias:true});
-        renderer.setSize(window.innerWidth,window.innerHeight);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
+        camera.position.set(0, 2, 6);
+        const renderer = new THREE.WebGLRenderer({canvas: document.getElementById("c"), antialias: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColor(0x020405);
-        const ctrl=new THREE.OrbitControls(camera,renderer.domElement);
+        const ctrl = new THREE.OrbitControls(camera, renderer.domElement);
 
-        const grid=new THREE.GridHelper(6,20,0x00ff88,0x113322);
-        grid.position.y=-1.5; scene.add(grid);
+        const grid = new THREE.GridHelper(6, 20, 0x00ff88, 0x113322);
+        grid.position.y = -1.5; scene.add(grid);
 
-        const MAX_POINTS=1500;
-        const geo=new THREE.BufferGeometry();
-        const pos=new Float32Array(MAX_POINTS*3);
-        const cols=new Float32Array(MAX_POINTS*3);
-        geo.setAttribute("position",new THREE.BufferAttribute(pos,3));
-        geo.setAttribute("color",new THREE.BufferAttribute(cols,3));
+        const MAX_POINTS = 1500;
+        const geo = new THREE.BufferGeometry();
+        const pos = new Float32Array(MAX_POINTS * 3);
+        const cols = new Float32Array(MAX_POINTS * 3);
+        geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
 
-        const mat=new THREE.PointsMaterial({size:0.18,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending});
-        const points=new THREE.Points(geo,mat); scene.add(points);
+        const mat = new THREE.PointsMaterial({size: 0.18, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending});
+        const points = new THREE.Points(geo, mat); scene.add(points);
 
         let actx, anlsr, fftBuf, audio, src;
-        if(audioUrl){
-            actx=new(window.AudioContext||window.webkitAudioContext)();
-            anlsr=actx.createAnalyser(); anlsr.fftSize=2048;
-            fftBuf=new Uint8Array(anlsr.frequencyBinCount);
-            audio=new Audio(); audio.crossOrigin="anonymous";
-            audio.src=audioUrl; audio.loop=true;
-            src=actx.createMediaElementSource(audio);
-            src.connect(anlsr); anlsr.connect(actx.destination);
-            audio.play().catch(e=>console.log);
-            
-            let pIdx=0;
-            setInterval(()=>{
-                anlsr.getByteFrequencyData(fftBuf);
-                const pA=geo.attributes.position.array;
-                const cA=geo.attributes.color.array;
-                for(let i=15;i<800;i++){
-                    float v=fftBuf[i];
-                    if(v>95){
-                        let s=pIdx*3;
-                        pA[s]=((i/800)*5)-2.5;
-                        pA[s+1]=(Math.log(i)-2.7)*1.2;
-                        pA[s+2]=(v/255)*2.5;
-                        cA[s]=i/800; cA[s+1]=v/255; cA[s+2]=1.0-(i/800);
-                        pIdx=(pIdx+1)%MAX_POINTS;
-                    }
-                }
-                geo.attributes.position.needsUpdate=true;
-                geo.attributes.color.needsUpdate=true;
-            },60);
+        
+        if(audioUrl) {
+            document.getElementById("btn-play").style.display = "block";
+            document.getElementById("msg-stato").textContent = "Clicca sul pulsante in alto per bypassare il blocco audio del browser.";
         }
 
-        function animate(){
+        function startAudio() {
+            document.getElementById("btn-play").style.display = "none";
+            document.getElementById("hint").style.display = "none";
+            
+            actx = new (window.AudioContext || window.webkitAudioContext)();
+            anlsr = actx.createAnalyser(); anlsr.fftSize = 2048;
+            fftBuf = new Uint8Array(anlsr.frequencyBinCount);
+            
+            audio = new Audio(); audio.crossOrigin = "anonymous";
+            audio.src = audioUrl; audio.loop = true;
+            src = actx.createMediaElementSource(audio);
+            src.connect(anlsr); anlsr.connect(actx.destination);
+            
+            audio.play().then(() => {
+                let pIdx = 0;
+                setInterval(() => {
+                    anlsr.getByteFrequencyData(fftBuf);
+                    const pA = geo.attributes.position.array;
+                    const cA = geo.attributes.color.array;
+                    for(let i = 15; i < 800; i++) {
+                        let v = fftBuf[i];
+                        if(v > 95) {
+                            let s = pIdx * 3;
+                            pA[s] = ((i / 800) * 5) - 2.5;
+                            pA[s+1] = (Math.log(i) - 2.7) * 1.2;
+                            pA[s+2] = (v / 255) * 2.5;
+                            cA[s] = i / 800; cA[s+1] = v / 255; cA[s+2] = 1.0 - (i / 800);
+                            pIdx = (pIdx + 1) % MAX_POINTS;
+                        }
+                    }
+                    geo.attributes.position.needsUpdate = true;
+                    geo.attributes.color.needsUpdate = true;
+                }, 60);
+            }).catch(e => {
+                console.log("Errore riproduzione:", e);
+                document.getElementById("btn-play").style.display = "block";
+            });
+        }
+
+        function animate() {
             requestAnimationFrame(animate);
-            points.rotation.y+=0.0015;
+            points.rotation.y += 0.0015;
             ctrl.update();
-            renderer.render(scene,camera);
+            renderer.render(scene, camera);
         }
         animate();
-        window.addEventListener("resize",()=>{
-            camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth,window.innerHeight);
+        window.addEventListener("resize", () => {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
 </body>
