@@ -90,16 +90,13 @@
                             pIdx = (pIdx + 1) % MAX_POINTS;
                         }
                     }
-                    geo.attributes.position.needsUpdate = true;
-                    geo.attributes.color.needsUpdate = true;
-                }, 60);
-            }).catch(e => {
-                console.log("Errore riproduzione:", e);
-                document.getElementById("btn-play").style.display = "block";
-            });
-        }
-
-        function animate() {
+                }
+                geo.attributes.position.needsUpdate=true;
+                geo.attributes.color.needsUpdate=true;
+            },60);
+        }).catch(e=>console.log);
+    }
+ {
             requestAnimationFrame(animate);
             points.rotation.y += 0.0015;
             ctrl.update();
