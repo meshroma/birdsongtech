@@ -51,7 +51,9 @@
   /* ---- mappa ---- */
   .mappa-griglia{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:28px;align-items:start}
   #mappa{height:420px;border-radius:14px;border:1px solid var(--linea);background:var(--ardesia)}
-  .leaflet-container{font-family:var(--sans)}
+  .leaflet-container{font-family:var(--sans);background:var(--ardesia)}
+  /* mappa OpenStreetMap (nessuna chiave) scurita per stare in tono con il sito */
+  .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55)}
   .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--ardesia);color:var(--testo)}
   .leaflet-popup-content{margin:12px 16px;font-size:14px}
   .leaflet-container a.leaflet-popup-close-button{color:var(--piuma)}
@@ -118,19 +120,19 @@
     <ol class="passi">
       <li><h3>Ascolto</h3><p>Un microfono collegato a una scheda XIAO ESP32-S3 Sense ascolta la palude senza interruzioni.</p></li>
       <li><h3>Riconoscimento</h3><p>Il modello di intelligenza artificiale a bordo salva il file solo se è sicuro della specie almeno all'85–90%.</p></li>
-      <li><h3>Trasmissione</h3><p>Due volte al giorno una Heltec V4, alimentata da un pannello solare, invia l'elenco dei canti via LoRa su una rete Meshtastic privata.</p></li>
-      <li><h3>Raccolta</h3><p>Alla base una Heltec V3 riceve l'elenco e lo passa a un Raspberry Pi. Le registrazioni vengono scaricate in riserva via Bluetooth o Wi-Fi.</p></li>
+      <li><h3>Trasmissione</h3><p>Due volte al giorno una scheda Heltec V4, alimentata da un pannello solare, invia l'elenco dei canti via LoRa su una rete Meshtastic privata.</p></li>
+      <li><h3>Raccolta</h3><p>Alla base una scheda Heltec V3 riceve l'elenco e lo passa a un Raspberry Pi. Le registrazioni vengono scaricate in riserva via Bluetooth o Wi-Fi.</p></li>
       <li><h3>Pubblicazione</h3><p>Elenco e file audio vengono caricati qui, consultabili da chiunque.</p></li>
     </ol>
   </section>
 
   <section class="sezione" aria-labelledby="t-mappa">
     <header>
-      <h2 id="t-mappa">Le stazioni di ascolto</h2>
+      <h2 id="t-mappa">La stazione di ascolto</h2>
       <p class="nota">Monumento Naturale Palude di Torre Flavia, Ladispoli (Roma).</p>
     </header>
     <div class="mappa-griglia">
-      <div id="mappa" role="region" aria-label="Mappa delle stazioni"></div>
+      <div id="mappa" role="region" aria-label="Mappa della stazione di ascolto"></div>
       <ul class="nodi" id="nodi"></ul>
     </div>
   </section>
@@ -147,7 +149,7 @@
 <footer class="piede">
   <div class="dentro">
     <p>birdsongtech — monitoraggio bioacustico del Monumento Naturale Palude di Torre Flavia. <span data-aggiornato></span>.</p>
-    <p>Contatti: <a href="mailto:birdsongtech@gmail.com">birdsongtech@gmail.com</a><br>Mappa © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, © <a href="https://carto.com/attributions">CARTO</a>.</p>
+    <p>Contatti: <a href="mailto:birdsongtech@gmail.com">birdsongtech@gmail.com</a><br>Mappa © <a href="https://www.openstreetmap.org/copyright">contributori di OpenStreetMap</a>.</p>
   </div>
 </footer>
 
@@ -178,25 +180,25 @@
   /* elenco stazioni */
   const nodi = document.getElementById('nodi');
   nodi.innerHTML = D.nodi.length ? D.nodi.map(n => `
-    <li><h3>${esc(nomeNodo(n.nodo))}</h3>
+    <li><h3>Stazione nel canneto</h3>
       <p><b>${n.rilevamenti}</b> ${n.rilevamenti === 1 ? 'canto riconosciuto' : 'canti riconosciuti'} · ultimo: <b>${esc(n.ultima_specie)}</b>, ${dataLunga(n.ultimo.slice(0,10))}</p>
       <p>${n.quota != null ? `Quota ${n.quota} m s.l.m.` : ''}${n.batteria != null ? ` · batteria ${n.batteria}%` : ''}</p>
-    </li>`).join('') : '<li><p>Nessuna stazione ha ancora inviato dati.</p></li>';
+    </li>`).join('') : '<li><p>La stazione non ha ancora inviato dati.</p></li>';
 
   /* mappa */
   const box = document.getElementById('mappa');
   if (window.L) {
     const map = L.map(box, {scrollWheelZoom:false}).setView([D.stazione.lat, D.stazione.lon], 15);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19, subdomains: 'abcd',
-      attribution: '&copy; OpenStreetMap &copy; CARTO'
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
     const punti = [];
     for (const n of D.nodi) {
       const ll = [n.lat, n.lon]; punti.push(ll);
       L.circleMarker(ll, {radius:9, color:'#f87e2e', weight:2, fillColor:'#f87e2e', fillOpacity:.45})
         .addTo(map)
-        .bindPopup(`<b>${esc(nomeNodo(n.nodo))}</b><br>${n.rilevamenti} canti · ultimo: ${esc(n.ultima_specie)}<br><a href="archivio.html?nodo=${encodeURIComponent(n.nodo)}">Vedi i suoi canti</a>`);
+        .bindPopup(`<b>Stazione di ascolto</b><br>${n.rilevamenti} canti · ultimo: ${esc(n.ultima_specie)}<br><a href="archivio.html">Vedi i canti</a>`);
     }
     if (punti.length > 1) map.fitBounds(punti, {padding:[60,60], maxZoom:16});
   } else {

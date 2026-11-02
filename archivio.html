@@ -17,7 +17,7 @@
   .intro h1{font-size:clamp(32px,4.2vw,48px)}
   .intro p{margin:10px 0 0}
 
-  .filtri{display:grid;grid-template-columns:minmax(200px,1.6fr) repeat(3,minmax(140px,1fr)) minmax(170px,1.1fr);gap:14px;align-items:end;
+  .filtri{display:grid;grid-template-columns:minmax(220px,1.8fr) repeat(2,minmax(150px,1fr)) minmax(190px,1.2fr);gap:14px;align-items:end;
     background:rgba(37,43,47,.9);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px 20px}
   .campo{display:flex;flex-direction:column;gap:6px;min-width:0}
   .campo label{font-size:13px;font-weight:500;color:var(--piuma)}
@@ -91,10 +91,6 @@
       <input id="f-al" type="date">
     </div>
     <div class="campo">
-      <label for="f-nodo">Stazione</label>
-      <select id="f-nodo"><option value="">Tutte</option></select>
-    </div>
-    <div class="campo">
       <label for="f-conf">Affidabilità minima: <output id="o-conf">0%</output></label>
       <input id="f-conf" type="range" min="0" max="100" step="5" value="0">
     </div>
@@ -112,7 +108,6 @@
           <tr>
             <th aria-sort="descending" data-col="quando"><button type="button">Data e ora</button></th>
             <th aria-sort="none" data-col="specie"><button type="button">Specie</button></th>
-            <th aria-sort="none" data-col="nodo"><button type="button">Stazione</button></th>
             <th aria-sort="none" data-col="score"><button type="button">Affidabilità</button></th>
             <th>Meteo</th>
             <th><span class="vh">Ascolta</span></th>
@@ -139,24 +134,22 @@
 <script src="assets/sito.js"></script>
 <script>
 (function(){
-  const {D, esc, dataBreve, ora, nomeNodo, confHTML, bottoneAscolta, specieConteggio} = BS;
+  const {D, esc, dataBreve, ora, confHTML, bottoneAscolta, specieConteggio} = BS;
   const $ = id => document.getElementById(id);
-  const f = {testo:$('f-testo'), dal:$('f-dal'), al:$('f-al'), nodo:$('f-nodo'), conf:$('f-conf'), audio:$('f-audio')};
+  const f = {testo:$('f-testo'), dal:$('f-dal'), al:$('f-al'), conf:$('f-conf'), audio:$('f-audio')};
   let ordine = {col:'quando', dir:-1};
 
   /* opzioni */
   $('elenco-specie').innerHTML = specieConteggio().map(s => `<option value="${esc(s.specie)}">${esc(s.sci)}</option>`).join('');
-  f.nodo.innerHTML += D.nodi.map(n => `<option value="${esc(n.nodo)}">${esc(nomeNodo(n.nodo))}</option>`).join('');
   const date = D.rilevamenti.map(r => r.data).sort();
   if (date.length) for (const el of [f.dal, f.al]) { el.min = date[0]; el.max = date[date.length-1]; }
 
-  /* filtri letti dall'indirizzo: archivio.html?specie=Pettirosso&nodo=...&dal=...&al=... */
+  /* filtri letti dall'indirizzo: archivio.html?specie=Pettirosso&dal=...&al=... */
   const q = new URLSearchParams(location.search);
   f.testo.value = q.get('specie') || '';
   f.dal.value = q.get('dal') || '';
   f.al.value = q.get('al') || '';
   if (q.get('giorno')) { f.dal.value = f.al.value = q.get('giorno'); }
-  f.nodo.value = q.get('nodo') || '';
   f.conf.value = q.get('conf') || 0;
   f.audio.checked = q.get('audio') === '1';
 
@@ -167,7 +160,6 @@
     if (f.testo.value.trim()) p.set('specie', f.testo.value.trim());
     if (f.dal.value) p.set('dal', f.dal.value);
     if (f.al.value) p.set('al', f.al.value);
-    if (f.nodo.value) p.set('nodo', f.nodo.value);
     if (+f.conf.value) p.set('conf', f.conf.value);
     if (f.audio.checked) p.set('audio', '1');
     const s = p.toString();
@@ -181,13 +173,11 @@
       (!t || norm(r.specie).includes(t) || norm(r.sci).includes(t)) &&
       (!f.dal.value || r.data >= f.dal.value) &&
       (!f.al.value || r.data <= f.al.value) &&
-      (!f.nodo.value || r.nodo === f.nodo.value) &&
       (r.score >= min - 1e-9) &&
       (!f.audio.checked || r.audio));
 
     const chiave = {
-      quando: r => r.data + ' ' + r.ora, specie: r => norm(r.specie),
-      nodo: r => r.nodo, score: r => r.score
+      quando: r => r.data + ' ' + r.ora, specie: r => norm(r.specie), score: r => r.score
     }[ordine.col];
     lista.sort((a,b) => (chiave(a) > chiave(b) ? 1 : chiave(a) < chiave(b) ? -1 : 0) * ordine.dir);
 
@@ -203,7 +193,6 @@
       return `<tr>
         <td class="quando num">${dataBreve(r.data)}<small>ore ${ora(r.ora)}</small></td>
         <td><span class="specie">${esc(r.specie)}</span><span class="sci">${esc(r.sci)}</span></td>
-        <td data-t="Stazione">${esc(nomeNodo(r.nodo))}</td>
         <td data-t="Affidabilità">${confHTML(r.score)}</td>
         <td class="meteo" data-t="Meteo">${esc(meteo)}</td>
         <td>${bottoneAscolta(r)}</td>
@@ -220,7 +209,7 @@
     th.setAttribute('aria-sort', ordine.dir > 0 ? 'ascending' : 'descending');
     mostra();
   }));
-  function azzera(){ f.testo.value=''; f.dal.value=''; f.al.value=''; f.nodo.value=''; f.conf.value=0; f.audio.checked=false; mostra(); }
+  function azzera(){ f.testo.value=''; f.dal.value=''; f.al.value=''; f.conf.value=0; f.audio.checked=false; mostra(); }
   $('azzera').addEventListener('click', azzera);
   $('azzera2').addEventListener('click', azzera);
   mostra();

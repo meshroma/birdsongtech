@@ -16,12 +16,8 @@
 html{-webkit-text-size-adjust:100%}
 body{
   margin:0;color:var(--testo);font:400 16px/1.55 var(--sans);
+  /* sfondo grigio uniforme. Per tornare al paesaggio: background-image:url('sfondo.svg');background-size:cover */
   background-color:var(--grafite);
-  /* per usare una foto: metti assets/sfondo.jpg e scrivi url('sfondo.jpg') al posto di url('sfondo.svg') */
-  background-image:
-    linear-gradient(180deg,rgba(28,33,36,.55) 0%,rgba(28,33,36,.82) 55%,rgba(28,33,36,.97) 100%),
-    url('sfondo.svg');
-  background-size:cover,cover;background-position:center top;background-attachment:fixed;
   min-height:100vh;display:flex;flex-direction:column;
 }
 a{color:var(--arancio-chiaro)}

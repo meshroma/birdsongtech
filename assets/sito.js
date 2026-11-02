@@ -25,8 +25,8 @@
     const p = Math.round((score||0)*100);
     return `<span class="conf" title="Affidabilità del riconoscimento"><i><b style="width:${p}%"></b></i>${p}%</span>`;
   }
-  function nomeNodo(n){               // TORRE_FLAVIA_01 -> Torre Flavia 01
-    return String(n||'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  function nomeNodo(n){               // TORRE_FLAVIA_01 -> Torre Flavia (la stazione e' unica: niente numero)
+    return String(n||'').replace(/_\d+$/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   }
   function linkPlayer(r){ return `player.html?id=${encodeURIComponent(r.id)}`; }
   const ONDE = '<svg class="onde" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 4.5a5 5 0 0 0 0 7"/><path d="M3.2 2a9 9 0 0 0 0 12"/><path d="M8.8 6.6a2 2 0 0 0 0 2.8"/></svg>';
