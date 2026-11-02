@@ -15,11 +15,19 @@ def genera_dashboard():
         
     conn.close()
 
-    # 2. Generazione delle righe della tabella in formato HTML
+       # 2. Generazione delle righe della tabella in formato HTML
     tabella_html = ""
     for r in righe:
         timestamp, nodo, specie, conf, batt, temp, press, alt, audio = r
         conf_perc = f"{int(conf * 100)}%" if conf else "N/D"
+        
+        # SBLOCCO UNIVERSALE: Se l'audio non è già un link internet (http), 
+        # Python costruisce l'indirizzo web assoluto ufficiale della tua repository GitHub Pages
+        if audio and not audio.startswith("http"):
+            audio_url_completo = f"https://github.io{audio}"
+        else:
+            audio_url_completo = audio
+
         tabella_html += f"""
         <tr>
             <td>{timestamp}</td>
@@ -28,9 +36,14 @@ def genera_dashboard():
             <td>{conf_perc}</td>
             <td>{temp}°C / {press} hPa</td>
             <td>{alt}m s.l.m.</td>
-            <td><a class="btn-listen" href="index.html?audio={audio}&specie={specie}&meta={nodo}">➧ VISUALIZZA 3D</a></td>
+            <td>
+                <a class="btn-listen" href="index.html?audio={audio_url_completo}&specie={urllib.parse.quote(specie)}&meta={urllib.parse.quote(nodo)}" target="_blank" style="color: #33ff88; text-decoration: none; font-weight: bold;">
+                    ➧ VISUALIZZA 3D
+                </a>
+            </td>
         </tr>
         """
+
 
     # 3. Struttura HTML (Divisa in due parti per inserire la tabella senza mandare in crash la f-string di Python)
     html_inizio = """<!DOCTYPE html>
