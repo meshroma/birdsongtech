@@ -1,5 +1,5 @@
 window.BIRDSONG = {
- "aggiornato": "2026-11-02 15:30:48",
+ "aggiornato": "2026-11-02 15:59:40",
  "stazione": {
   "lat": 41.9597,
   "lon": 12.05215
@@ -7,31 +7,21 @@ window.BIRDSONG = {
  "nodi": [
   {
    "nodo": "TORRE_FLAVIA_01",
-   "rilevamenti": 2,
-   "ultimo": "2026-10-30 11:15:30",
-   "ultima_specie": "Martin Pescatore",
-   "batteria": 91,
-   "lat": 41.9548,
-   "lon": 12.0461,
-   "quota": 2.5
-  },
-  {
-   "nodo": "TORRE_FLAVIA_02",
-   "rilevamenti": 1,
+   "rilevamenti": 3,
    "ultimo": "2026-10-30 14:02:15",
    "ultima_specie": "Airone Cenerino",
    "batteria": 85,
-   "lat": 41.9562,
-   "lon": 12.0495,
-   "quota": 8.0
+   "lat": 41.9548,
+   "lon": 12.0461,
+   "quota": 2.5
   }
  ],
  "rilevamenti": [
   {
-   "id": "20261030-140215-TORRE-FLAVIA-02",
+   "id": "20261030-140215-TORRE-FLAVIA-01",
    "data": "2026-10-30",
    "ora": "14:02:15",
-   "nodo": "TORRE_FLAVIA_02",
+   "nodo": "TORRE_FLAVIA_01",
    "specie": "Airone Cenerino",
    "sci": "Ardea cinerea",
    "score": 0.76,
@@ -39,9 +29,9 @@ window.BIRDSONG = {
    "batteria": 85,
    "temperatura": 16.8,
    "pressione": 1011.5,
-   "lat": 41.9562,
-   "lon": 12.0495,
-   "quota": 8.0
+   "lat": 41.9548,
+   "lon": 12.0461,
+   "quota": 2.5
   },
   {
    "id": "20261030-111530-TORRE-FLAVIA-01",
