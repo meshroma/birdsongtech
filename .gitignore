@@ -184,3 +184,5 @@ cython_debug/
 da_importare/
 # archivio audio locale: i file pubblici stanno su Internet Archive
 audio/
+# anteprima locale delle foto (generata da foto_specie.py)
+assets/specie/anteprima.html

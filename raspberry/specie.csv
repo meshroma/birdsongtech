@@ -1,59 +1,117 @@
-codice,nome_ita,nome_sci
-ACRARU,Cannareccione,Acrocephalus arundinaceus
-ACRSCI,Cannaiola comune,Acrocephalus scirpaceus
-ALCATT,Martin pescatore,Alcedo atthis
-ANACRE,Alzavola,Anas crecca
-ANAPLA,Germano reale,Anas platyrhynchos
-APUAPU,Rondone comune,Apus apus
-ARDALB,Airone bianco maggiore,Ardea alba
-ARDCIN,Airone cenerino,Ardea cinerea
-ARDPUR,Airone rosso,Ardea purpurea
-ATHNOC,Civetta,Athene noctua
-BOTSTE,Tarabuso,Botaurus stellaris
-BUBIBI,Airone guardabuoi,Bubulcus ibis
-CARCAR,Cardellino,Carduelis carduelis
-CETCET,Usignolo di fiume,Cettia cetti
-CHAALE,Fratino,Charadrius alexandrinus
-CHADUB,Corriere piccolo,Charadrius dubius
-CHLCHL,Verdone,Chloris chloris
-CHRRID,Gabbiano comune,Chroicocephalus ridibundus
-CIRAER,Falco di palude,Circus aeruginosus
-CISJUN,Beccamoschino,Cisticola juncidis
-CORCOR,Cornacchia grigia,Corvus cornix
-CUCCAN,Cuculo,Cuculus canorus
-CURMEL,Occhiocotto,Curruca melanocephala
-CYACAE,Cinciarella,Cyanistes caeruleus
-EGRGAR,Garzetta,Egretta garzetta
-EMBSCH,Migliarino di palude,Emberiza schoeniclus
-ERIRUB,Pettirosso,Erithacus rubecula
-FALTIN,Gheppio,Falco tinnunculus
-FRICOE,Fringuello,Fringilla coelebs
-FULATR,Folaga,Fulica atra
-GALCHL,Gallinella d'acqua,Gallinula chloropus
-HIMHIM,Cavaliere d'Italia,Himantopus himantopus
-HIRRUS,Rondine,Hirundo rustica
-IXOMIN,Tarabusino,Ixobrychus minutus
-LARMIC,Gabbiano reale,Larus michahellis
-LUSMEG,Usignolo,Luscinia megarhynchos
-MERAPI,Gruccione,Merops apiaster
-MOTALB,Ballerina bianca,Motacilla alba
-MOTCIN,Ballerina gialla,Motacilla cinerea
-MUSSTR,Pigliamosche,Muscicapa striata
-NYCNYC,Nitticora,Nycticorax nycticorax
-OTUSCO,Assiolo,Otus scops
-PANBIA,Basettino,Panurus biarmicus
-PARMAJ,Cinciallegra,Parus major
-PASITA,Passera d'Italia,Passer italiae
-PICVIR,Picchio verde,Picus viridis
-RALAQU,Porciglione,Rallus aquaticus
-SAXRUB,Saltimpalo,Saxicola rubicola
-SERSER,Verzellino,Serinus serinus
-STRDEC,Tortora dal collare,Streptopelia decaocto
-STUVUL,Storno,Sturnus vulgaris
-SYLATR,Capinera,Sylvia atricapilla
-TACRUF,Tuffetto,Tachybaptus ruficollis
-TROTRO,Scricciolo,Troglodytes troglodytes
-TURMER,Merlo,Turdus merula
-TYTALB,Barbagianni,Tyto alba
-UPUEPO,Upupa,Upupa epops
-VANVAN,Pavoncella,Vanellus vanellus
+codice,nome_ita,nome_sci,presenza
+ACRARU,Cannareccione,Acrocephalus arundinaceus,"M reg, B"
+ACRMEL,Forapaglie castagnolo,Acrocephalus melanopogon,"M reg, W"
+ACRSCI,Cannaiola comune,Acrocephalus scirpaceus,"M reg, B"
+ACTHYP,Piro piro piccolo,Actitis hypoleucos,"M reg, S, W irr"
+AEGCAU,Codibugnolo,Aegithalos caudatus,"S, B?"
+ALAARV,Allodola,Alauda arvensis,"M reg, W, S, B"
+ALCATT,Martin pescatore,Alcedo atthis,"M reg, W, S, B?"
+ANACRE,Alzavola,Anas crecca,"M reg, W"
+ANAPLA,Germano reale,Anas platyrhynchos,"M reg, W, S, B"
+ANTPRA,Pispola,Anthus pratensis,"M reg, W"
+ANTSPI,Spioncello,Anthus spinoletta,"M reg, W"
+APUAPU,Rondone comune,Apus apus,M reg
+ARDALB,Airone bianco maggiore,Ardea alba,"M reg, W, S irr"
+ARDCIN,Airone cenerino,Ardea cinerea,"M reg, W, S"
+ARDPUR,Airone rosso,Ardea purpurea,"M reg, B?"
+ARDRAL,Sgarza ciuffetto,Ardeola ralloides,M reg
+ASIFLA,Gufo di palude,Asio flammeus,"M reg, W irr"
+ATHNOC,Civetta,Athene noctua,"S, B"
+AYTFER,Moriglione,Aythya ferina,"M reg, W irr"
+AYTNYR,Moretta tabaccata,Aythya nyroca,"M reg, W irr"
+BOTSTE,Tarabuso,Botaurus stellaris,"M reg, W, S irr"
+BUBIBI,Airone guardabuoi,Bubulcus ibis,"B?, W"
+BUTBUT,Poiana,Buteo buteo,"M reg, W"
+CALALB,Piovanello tridattilo,Calidris alba,"M reg, W irr"
+CALALP,Piovanello pancianera,Calidris alpina,"M reg, W irr"
+CALDIO,Berta maggiore,Calonectris diomedea,"M reg, W irr"
+CALFER,Piovanello comune,Calidris ferruginea,M reg
+CALMIN,Gambecchio comune,Calidris minuta,M reg
+CALPUG,Combattente,Calidris pugnax,M reg
+CARCAR,Cardellino,Carduelis carduelis,"S, B, M reg"
+CETCET,Usignolo di fiume,Cettia cetti,"S, B"
+CHAALE,Fratino,Charadrius alexandrinus,"M reg, W, B irr"
+CHADUB,Corriere piccolo,Charadrius dubius,"M reg, B, W irr"
+CHAHIA,Corriere grosso,Charadrius hiaticula,"M reg, W irr"
+CHLCHL,Verdone,Chloris chloris,"S, B, M reg"
+CIRAER,Falco di palude,Circus aeruginosus,"M reg, W"
+CISJUN,Beccamoschino,Cisticola juncidis,"S, B"
+CORCOR,Cornacchia grigia,Corvus corone,"S, B"
+CORMON,Taccola,Corvus monedula,S
+CYACAE,Cinciarella,Cyanistes caeruleus,"W, S, B"
+CYASVE,Pettazzurro,Cyanecula svecica,"M reg, W irr"
+DELURB,Balestruccio,Delichon urbicum,"M reg, W irr"
+EGRGAR,Garzetta,Egretta garzetta,"M reg, W, S"
+EMBCAL,Strillozzo,Emberiza calandra,"S, B, W"
+EMBSCH,Migliarino di palude,Emberiza schoeniclus,"M reg, W"
+ERIRUB,Pettirosso,Erithacus rubecula,"M reg, W"
+FALPER,Falco pellegrino,Falco peregrinus,"M reg, W irr"
+FALTIN,Gheppio,Falco tinnunculus,"S, B"
+FRICOE,Fringuello,Fringilla coelebs,"M reg, W"
+FULATR,Folaga,Fulica atra,"M reg, W, S, B"
+GALCHL,Gallinella d'acqua,Gallinula chloropus,"S, B, M reg, W"
+GALCRI,Cappellaccia,Galerida cristata,"S, B"
+GALGAL,Beccaccino,Gallinago gallinago,"M reg, W"
+HAEOST,Beccaccia di mare,Haematopus ostralegus,M reg
+HIMHIM,Cavaliere d'Italia,Himantopus himantopus,M reg
+HIRRUS,Rondine,Hirundo rustica,"M reg, B, W irr"
+IXOMIN,Tarabusino,Ixobrychus minutus,"M reg, B"
+JYNTOR,Torcicollo,Jynx torquilla,"M reg, W irr"
+LARAUD,Gabbiano corso,Larus audouinii,"M reg, S irr"
+LARMEL,Gabbiano corallino,Larus melanocephalus,"M reg, W irr"
+LARMIC,Gabbiano reale,Larus michahellis,"M reg, W"
+LARRID,Gabbiano comune,Larus ridibundus,"M reg, W"
+LINCAN,Fanello,Linaria cannabina,"M reg, W irr"
+LUSMEG,Usignolo,Luscinia megarhynchos,"M reg, B"
+MARPEN,Fischione,Mareca penelope,"M reg, W irr"
+MARSTR,Canapiglia,Mareca strepera,"M reg, W irr"
+MERAPI,Gruccione,Merops apiaster,M reg
+MILMIG,Nibbio bruno,Milvus migrans,M reg
+MILMIL,Nibbio reale,Milvus milvus,"M reg, W irr"
+MORBAS,Sula,Morus bassanus,"M reg, W irr"
+MOTALB,Ballerina bianca,Motacilla alba,"S, B, M reg, W"
+MOTCIN,Ballerina gialla,Motacilla cinerea,"M reg, W irr"
+MOTFLA,Cutrettola,Motacilla flava,M reg
+NUMPHA,Chiurlo piccolo,Numenius phaeopus,M reg
+NYCNYC,Nitticora,Nycticorax nycticorax,"M reg, B irr"
+OENOEN,Culbianco,Oenanthe oenanthe,M reg
+PARMAJ,Cinciallegra,Parus major,"S, B"
+PASITA,Passera d'Italia,Passer italiae,"S, B"
+PASMON,Passera mattugia,Passer montanus,"S, B, W"
+PHACAR,Cormorano,Phalacrocorax carbo,"M reg, W"
+PHOOCH,Codirosso spazzacamino,Phoenicurus ochruros,"M reg, W"
+PHOPHO,Codirosso comune,Phoenicurus phoenicurus,M reg
+PHYCOL,Luì piccolo,Phylloscopus collybita,"M reg, W"
+PHYTRI,Luì piccolo siberiano,Phylloscopus tristis,"M reg, W"
+PICPIC,Gazza,Pica pica,"S, B"
+PLALEU,Spatola,Platalea leucorodia,"M reg, W irr"
+PLEFAL,Mignattaio,Plegadis falcinellus,"M reg, W irr"
+PODCRI,Svasso maggiore,Podiceps cristatus,"M reg, W"
+PRUMOD,Passera scopaiola,Prunella modularis,"M reg, W"
+PUFYEL,Berta minore,Puffinus yelkouan,"M reg, W irr"
+RALAQU,Porciglione,Rallus aquaticus,"M reg, W, S, B"
+REMPEN,Pendolino,Remiz pendulinus,"M reg, W"
+RIPRIP,Topino,Riparia riparia,M reg
+SAXRUB,Stiaccino,Saxicola rubetra,M reg
+SAXTOR,Saltimpalo,Saxicola torquatus,"S, B, M reg, W"
+SERSER,Verzellino,Serinus serinus,"S, B, M reg, W"
+SPACLY,Mestolone,Spatula clypeata,"M reg, W"
+SPAQUE,Marzaiola,Spatula querquedula,M reg
+STRDEC,Tortora dal collare,Streptopelia decaocto,"S, B"
+STRTUR,Tortora selvatica,Streptopelia turtur,M reg
+STUVUL,Storno,Sturnus vulgaris,"M reg, W, S, B"
+SYLATR,Capinera,Sylvia atricapilla,"S, B, M reg"
+SYLCAN,Sterpazzolina,Sylvia cantillans,"M reg, B?"
+SYLMEL,Occhiocotto,Sylvia melanocephala,"S, B"
+TACRUF,Tuffetto,Tachybaptus ruficollis,"M reg, W, S, B"
+TADTAD,Volpoca,Tadorna tadorna,"M reg, W irr"
+THASAN,Beccapesci,Thalasseus sandvicensis,"M reg, W"
+TRIGLA,Piro piro boschereccio,Tringa glareola,M reg
+TRINEB,Pantana,Tringa nebularia,M reg
+TRIOCH,Piro piro culbianco,Tringa ochropus,M reg
+TRITOT,Pettegola,Tringa totanus,M reg
+TROTRO,Scricciolo,Troglodytes troglodytes,"M reg, S, B"
+TURMER,Merlo,Turdus merula,"S, B, M reg"
+TURPHI,Tordo bottaccio,Turdus philomelos,"M reg, W"
+UPUEPO,Upupa,Upupa epops,M reg
+VANVAN,Pavoncella,Vanellus vanellus,"M reg, W"

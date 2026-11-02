@@ -71,6 +71,7 @@
   .specie-elenco a:hover .nome{color:var(--arancio-chiaro)}
   .specie-elenco .nome{font-weight:600;display:block}
   .specie-elenco .sci{font-size:15px}
+  .ringraziamenti strong{color:var(--testo);font-weight:600}
   .specie-elenco .quanti{color:var(--piuma);font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
 
   @media (max-width:900px){
@@ -144,11 +145,16 @@
     </header>
     <ul class="specie-elenco" id="specie"></ul>
   </section>
+
+  <section class="sezione ringraziamenti" aria-labelledby="t-grazie">
+    <h2 id="t-grazie">Ringraziamenti</h2>
+    <p class="prosa">Il progetto birdsongtech si svolge nel Monumento Naturale Palude di Torre Flavia, area protetta gestita dalla <strong>Città Metropolitana di Roma Capitale</strong>. Ringraziamo l'ente gestore per aver reso possibile l'ascolto e la documentazione della vita della palude.</p>
+  </section>
 </main>
 
 <footer class="piede">
   <div class="dentro">
-    <p>birdsongtech — monitoraggio bioacustico del Monumento Naturale Palude di Torre Flavia. <span data-aggiornato></span>.</p>
+    <p>birdsongtech — monitoraggio bioacustico del Monumento Naturale Palude di Torre Flavia. Area protetta gestita dalla <a href="https://www.cittametropolitanaroma.it" target="_blank" rel="noopener">Città Metropolitana di Roma Capitale</a>. <span data-aggiornato></span>.</p>
     <p>Contatti: <a href="mailto:birdsongtech@gmail.com">birdsongtech@gmail.com</a><br>Mappa © <a href="https://www.openstreetmap.org/copyright">contributori di OpenStreetMap</a>.</p>
   </div>
 </footer>
@@ -158,7 +164,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function(){
-  const {D, esc, dataLunga, ora, nomeNodo, bottoneAscolta, confHTML, specieConteggio} = BS;
+  const {D, esc, dataLunga, ora, nomeNodo, bottoneAscolta, confHTML, specieConteggio, schedaSpecie, fotoHTML} = BS;
 
   /* ultimo canto: il piu' recente con audio, altrimenti il piu' recente in assoluto */
   const r = D.rilevamenti.find(x => x.audio) || D.rilevamenti[0];
@@ -166,6 +172,7 @@
     const meteo = [r.temperatura != null ? `${r.temperatura} °C` : null, r.pressione != null ? `${r.pressione} hPa` : null].filter(Boolean).join(', ');
     document.getElementById('ultimo').innerHTML = `
       <h2>Ultimo canto riconosciuto</h2>
+      ${fotoHTML(schedaSpecie(r))}
       <div class="nome">${esc(r.specie)}</div>
       <span class="sci">${esc(r.sci)}</span>
       <dl>

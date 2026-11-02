@@ -32,6 +32,7 @@ Monitoraggio bioacustico automatico degli uccelli nel **Monumento Naturale Palud
 | `player.html` | Visualizzatore 3D del canto (`player.html?id=...`, `?demo=1` per il canto di prova) |
 | `pubblica.py` | Log CSV → database → audio su archive.org → dati del sito |
 | `aggiorna_birdsong.bat` | Il comando unico da lanciare con doppio clic |
+| `foto_specie.py` | Scarica da Wikimedia Commons una foto per specie (4:3, 800×600) con autore e licenza, in `assets/specie/` |
 | `prova_sito_locale.bat` | Apre il sito sul PC con gli audio locali, senza pubblicare nulla |
 | `assets/` | Logo, favicon, sfondo, stile e script comuni, librerie (three.js) |
 | `data/rilevamenti.js` / `.json` | Dati letti dal sito (generati, da non modificare a mano) |
@@ -84,6 +85,20 @@ Archive.org può impiegare qualche minuto a rendere ascoltabile un file appena c
 
 **Raspberry Pi**: `aggiorna_birdsong.bat` scarica il log da `pi@192.168.1.100:/home/pi/birdsong_log.csv` (modificabile in cima al file). Per non dover scrivere la password ogni volta, vedi [raspberry/LEGGIMI.md](raspberry/LEGGIMI.md).
 
+## Foto delle specie
+
+Il player e la Home mostrano una foto di ogni specie, con autore e licenza (obbligatori per le licenze Creative Commons).
+Le foto vengono da Wikimedia Commons, a partire dalla voce Wikipedia di ogni specie, e solo con licenze libere.
+
+```
+pip install pillow
+python foto_specie.py
+```
+
+Poi apri `assets/specie/anteprima.html` per controllarle tutte. Per sostituire una foto o spostare il ritaglio, compila `assets/specie/scelte.csv` (istruzioni in cima a `foto_specie.py`) e rilancia lo script con il codice della specie, es. `python foto_specie.py ERIRUB`. Infine pubblica con `aggiorna_birdsong.bat`.
+
+L'elenco delle specie (`raspberry/specie.csv`) contiene le 116 specie presenti regolarmente a Torre Flavia secondo la checklist di Battisti et al. (2021), *Natural History Sciences* 8: 3-28, con il loro stato di presenza.
+
 ## Dominio www.birdsongtech.it
 
 Quando il dominio è registrato:
@@ -102,4 +117,6 @@ Non creare il file `CNAME` prima che il dominio esista: il sito su github.io sme
 ## Crediti
 
 - Il visualizzatore 3D è basato su [Bird Song Visualization in 3D](https://github.com/venomez-viper/Bird-Song-Visualization-in-3D-) di venomez-viper, adattato per birdsongtech.
+- Foto delle specie: autori vari, Wikimedia Commons, licenze indicate sotto ogni foto.
+- Elenco delle specie: Battisti C., Cento M., Fraticelli F., Hueting S., Muratore S. (2021), checklist dei vertebrati della ZPS Palude di Torre Flavia.
 - [three.js](https://threejs.org) (licenza MIT), [Leaflet](https://leafletjs.com) (BSD-2), mappe © OpenStreetMap e CARTO.

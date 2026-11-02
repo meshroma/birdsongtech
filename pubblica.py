@@ -293,6 +293,56 @@ def carica_su_archive(conn):
     return caricati
 
 
+# ---------------------------------------------------------------- schede delle specie
+TAB_SPECIE = os.path.join(CARTELLA, "raspberry", "specie.csv")
+CREDITI_FOTO = os.path.join(CARTELLA, "assets", "specie", "crediti.json")
+
+
+def testo_presenza(codici):
+    """'M reg, W, S, B' -> 'sedentaria, nidificante, svernante, di passo regolare'"""
+    parole = []
+    for c in [x.strip() for x in (codici or "").split(",") if x.strip()]:
+        dubbio = c.endswith("?")
+        irr = c.endswith(" irr")
+        base = c.rstrip("?").replace(" irr", "").strip()
+        nome = {"S": "sedentaria", "B": "nidificante", "W": "svernante",
+                "M reg": "di passo regolare", "M": "di passo"}.get(base)
+        if not nome:
+            continue
+        if irr:
+            nome += " (irregolare)"
+        if dubbio:
+            nome += " (da confermare)"
+        parole.append(nome)
+    ordine = ["sedentaria", "nidificante", "svernante", "di passo"]
+    parole.sort(key=lambda t: next((i for i, o in enumerate(ordine) if t.startswith(o)), 9))
+    return ", ".join(parole)
+
+
+def schede_specie():
+    """Dati per specie (chiave: nome scientifico minuscolo): foto, crediti, presenza a Torre Flavia."""
+    if not os.path.exists(TAB_SPECIE):
+        return {}
+    crediti = {}
+    if os.path.exists(CREDITI_FOTO):
+        with open(CREDITI_FOTO, encoding="utf-8") as f:
+            crediti = json.load(f)
+    schede = {}
+    with open(TAB_SPECIE, newline="", encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            cod = r["codice"].strip().upper()
+            foto = f"assets/specie/{cod}.jpg"
+            c = crediti.get(cod)
+            schede[r["nome_sci"].strip().lower()] = {
+                "codice": cod,
+                "nome": r["nome_ita"].strip(),
+                "presenza": testo_presenza(r.get("presenza")),
+                "foto": foto if c and os.path.exists(os.path.join(CARTELLA, *foto.split("/"))) else None,
+                "credito": {k: c.get(k) for k in ("autore", "licenza", "url_licenza", "pagina")} if c else None,
+            }
+    return schede
+
+
 # ---------------------------------------------------------------- export per il sito
 def esporta_dati(conn):
     cur = conn.cursor()
@@ -327,6 +377,7 @@ def esporta_dati(conn):
         "aggiornato": datetime.now().strftime(FORMATO_TS),
         "stazione": STAZIONE_DEFAULT,
         "nodi": sorted(nodi.values(), key=lambda n: n["nodo"]),
+        "specie": schede_specie(),
         "rilevamenti": rilevamenti,
     }
     os.makedirs(CARTELLA_DATI, exist_ok=True)

@@ -25,8 +25,17 @@
     const p = Math.round((score||0)*100);
     return `<span class="conf" title="Affidabilità del riconoscimento"><i><b style="width:${p}%"></b></i>${p}%</span>`;
   }
-  function nomeNodo(n){               // TORRE_FLAVIA_01 -> Torre Flavia (la stazione e' unica: niente numero)
-    return String(n||'').replace(/_\d+$/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  // la stazione di ascolto e' unica: ovunque si usa il nome ufficiale dell'area protetta
+  const LUOGO = 'Monumento Naturale Palude di Torre Flavia';
+  function nomeNodo(n){ return LUOGO; }
+  function schedaSpecie(r){ return (D.specie || {})[String(r && r.sci || '').toLowerCase()] || null; }
+  function fotoHTML(sc, classe='foto'){
+    if (!sc || !sc.foto) return '';
+    const c = sc.credito || {};
+    const lic = c.url_licenza ? `<a href="${esc(c.url_licenza)}" target="_blank" rel="noopener">${esc(c.licenza)}</a>` : esc(c.licenza || '');
+    const fonte = c.pagina ? `<a href="${esc(c.pagina)}" target="_blank" rel="noopener">Wikimedia Commons</a>` : 'Wikimedia Commons';
+    return `<figure class="${classe}"><img src="${esc(sc.foto)}" alt="${esc(sc.nome)}" width="800" height="600" loading="lazy">
+      <figcaption>Foto: ${esc(c.autore || '')}, ${lic}, ${fonte}</figcaption></figure>`;
   }
   function linkPlayer(r){ return `player.html?id=${encodeURIComponent(r.id)}`; }
   const ONDE = '<svg class="onde" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 4.5a5 5 0 0 0 0 7"/><path d="M3.2 2a9 9 0 0 0 0 12"/><path d="M8.8 6.6a2 2 0 0 0 0 2.8"/></svg>';
@@ -49,7 +58,7 @@
     return [...m.values()].sort((a,b) => b.n - a.n || a.specie.localeCompare(b.specie,'it'));
   }
 
-  window.BS = {D, esc, dataLunga, dataBreve, ora, perc, confHTML, nomeNodo, linkPlayer, bottoneAscolta, specieConteggio, ONDE};
+  window.BS = {D, esc, dataLunga, dataBreve, ora, perc, confHTML, nomeNodo, LUOGO, schedaSpecie, fotoHTML, linkPlayer, bottoneAscolta, specieConteggio, ONDE};
 
   document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-aggiornato]').forEach(el => {

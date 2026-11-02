@@ -36,6 +36,12 @@ a{color:var(--arancio-chiaro)}
   border-radius:16px;padding:20px;backdrop-filter:blur(6px);max-height:calc(100% - 92px);overflow-y:auto}
 #scheda .nome{font-size:24px;font-weight:700;line-height:1.15}
 #scheda .sci{font-family:var(--serif);font-style:italic;color:var(--piuma);font-size:17px;margin-top:2px}
+#s-foto figure{margin:0 0 14px}
+#s-foto img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#2d3439}
+#s-foto figcaption{font-size:11px;line-height:1.4;color:var(--piuma);margin-top:5px}
+#s-foto figcaption a{color:var(--piuma)}
+#s-presenza{font-size:13px;color:var(--piuma);margin-top:8px;line-height:1.45}
+#s-presenza b{color:var(--testo);font-weight:500}
 #scheda dl{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:16px 0 0;font-size:14px}
 #scheda dt{color:var(--piuma)}
 #scheda dd{font-variant-numeric:tabular-nums}
@@ -61,6 +67,7 @@ a{color:var(--arancio-chiaro)}
 #altri a{display:flex;justify-content:space-between;gap:10px;font-size:14px;text-decoration:none;color:var(--testo);padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
 #altri a:hover{color:var(--arancio-chiaro)}
 #altri small{color:var(--piuma)}
+#ente{margin-top:16px;padding-top:12px;border-top:1px solid var(--linea);font-size:11.5px;line-height:1.45;color:var(--piuma)}
 #errore{display:none;margin-top:12px;font-size:14px;color:#ffb38a}
 
 /* ---- avvio ---- */
@@ -92,6 +99,9 @@ a{color:var(--arancio-chiaro)}
 @media (max-width:720px){
   #scheda{top:auto;bottom:0;left:0;right:0;width:auto;border-radius:16px 16px 0 0;max-height:46%;padding:16px}
   #altri,#legenda{display:none}
+  #s-foto figure{float:left;width:42%;margin:0 12px 6px 0}
+  #s-foto figcaption{font-size:9.5px}
+  #s-dati{clear:both}
   #fscale{transform:scale(.85);transform-origin:right center}
   .ptlabel{font-size:11px}
 }
@@ -105,8 +115,10 @@ a{color:var(--arancio-chiaro)}
 <a id="marchio" href="index.html" title="Torna alla home"><img src="assets/logo-simbolo.png" alt="" width="40" height="38"><span><b>birdsong</b><i>tech</i></span></a>
 
 <aside id="scheda" aria-live="polite">
+  <div id="s-foto"></div>
   <div class="nome" id="s-nome">Visualizzatore 3D</div>
   <div class="sci" id="s-sci"></div>
+  <p id="s-presenza" hidden></p>
   <dl id="s-dati"></dl>
   <div id="comandi">
     <div class="riga">
@@ -128,6 +140,7 @@ a{color:var(--arancio-chiaro)}
     <p id="errore" role="alert"></p>
   </div>
   <div id="altri" hidden><h2 id="altri-titolo">Altri canti della stessa specie</h2><ul id="altri-lista"></ul></div>
+  <p id="ente">Monumento Naturale Palude di Torre Flavia, area protetta gestita dalla Città Metropolitana di Roma Capitale.</p>
 </aside>
 
 <div id="avvio" class="nascosto"><button type="button" id="b-avvio">
@@ -158,7 +171,7 @@ const Q = new URLSearchParams(location.search);
 const MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dataLunga=iso=>{if(!iso)return'';const[a,m,g]=iso.split('-').map(Number);return `${g} ${MESI[m-1]} ${a}`;};
-const nomeNodo=n=>String(n||'').replace(/_\d+$/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+const nomeNodo=n=>'Monumento Naturale Palude di Torre Flavia';   // stazione unica: nome ufficiale dell'area
 
 let canto=null;     // {titolo, sci, audio, record}
 if(Q.get('id')){
@@ -186,6 +199,15 @@ function mostraErrore(t){$('errore').textContent=t;$('errore').style.display='bl
   document.title=`${canto.titolo} · Visualizzatore 3D · birdsongtech`;
   $('s-nome').textContent=canto.titolo;
   $('s-sci').textContent=canto.sci;
+  /* foto e presenza della specie (da data/rilevamenti.js, generati da pubblica.py) */
+  const sc=(DATI.specie||{})[String(canto.sci||'').toLowerCase()];
+  if(sc&&sc.foto){
+    const c=sc.credito||{};
+    const lic=c.url_licenza?`<a href="${esc(c.url_licenza)}" target="_blank" rel="noopener">${esc(c.licenza)}</a>`:esc(c.licenza||'');
+    const fonte=c.pagina?`<a href="${esc(c.pagina)}" target="_blank" rel="noopener">Wikimedia Commons</a>`:'Wikimedia Commons';
+    $('s-foto').innerHTML=`<figure><img src="${esc(sc.foto)}" alt="${esc(sc.nome)}" width="800" height="600"><figcaption>Foto: ${esc(c.autore||'')}, ${lic}, ${fonte}</figcaption></figure>`;
+  }
+  if(sc&&sc.presenza){ $('s-presenza').hidden=false; $('s-presenza').innerHTML=`A Torre Flavia è <b>${esc(sc.presenza)}</b>.`; }
   const r=canto.record;
   if(r){
     const righe=[

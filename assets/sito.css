@@ -88,6 +88,13 @@ h3{font-size:18px;font-weight:600}
 .conf i{display:block;width:54px;height:5px;border-radius:3px;background:var(--linea);overflow:hidden}
 .conf i b{display:block;height:100%;background:var(--arancio)}
 
+/* foto della specie con crediti (obbligatori per le licenze Creative Commons) */
+.foto{margin:0 0 18px}
+.foto img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:var(--ardesia-2)}
+.foto figcaption{font-size:11.5px;line-height:1.4;color:var(--piuma);margin-top:6px}
+.foto figcaption a{color:var(--piuma)}
+.foto figcaption a:hover{color:var(--testo)}
+
 @media (max-width:720px){
   .testata{flex-direction:column;align-items:flex-start;gap:10px;position:static}
   .marchio img{height:34px}
