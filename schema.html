@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Schema flussi e dati · birdsongtech</title>
+<meta name="description" content="Come funziona birdsongtech: dalla stazione di ascolto nella Palude di Torre Flavia all'archivio pubblico dei canti.">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/sito.css">
+<style>
+  .intro{padding:48px 0 26px}
+  .intro h1{font-size:clamp(32px,4.2vw,48px)}
+  .intro .prosa{margin:14px 0 0}
+  .schema{margin:0}
+  .schema a{display:block}
+  .schema img{display:block;width:100%;height:auto;border-radius:14px;background:#fff;
+    box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+  .schema figcaption{margin-top:12px;font-size:14px;color:var(--piuma)}
+</style>
+</head>
+<body>
+
+<header class="testata">
+  <a class="marchio" href="index.html"><img src="assets/logo-simbolo.png" alt="" width="42" height="40"><span><b>birdsong</b><i>tech</i></span></a>
+  <nav class="menu" aria-label="Sezioni del sito">
+    <a href="index.html">Home</a>
+    <a href="archivio.html">Archivio dei canti</a>
+    <a href="player.html?demo=1">Visualizzatore 3D</a>
+    <a href="schema.html" aria-current="page">Schema flussi e dati</a>
+  </nav>
+</header>
+
+<main>
+  <div class="intro">
+    <h1>Schema flussi e dati</h1>
+    <p class="prosa">Il percorso di ogni canto, dalla stazione di ascolto nel canneto fino a questo sito: l'elenco dei rilevamenti viaggia via radio, i file audio vengono scaricati sul posto e poi pubblicati.</p>
+  </div>
+
+  <figure class="schema">
+    <a href="assets/schema%20flussi%20e%20dati.png" target="_blank" rel="noopener" title="Apri lo schema a grandezza piena">
+      <img src="assets/schema%20flussi%20e%20dati.png" alt="Schema del sistema: in campo il microfono con la scheda XIAO ESP32-S3 riconosce i canti e la scheda Heltec V4 invia via radio LoRa l'elenco alla stazione base; qui la Heltec V3 e il Raspberry Pi registrano i rilevamenti e il PC li pubblica su Internet Archive e GitHub Pages, consultabili da visitatori, scuole e ricercatori. I file audio vengono scaricati periodicamente in riserva via Bluetooth o Wi-Fi." width="2400" height="1080">
+    </a>
+    <figcaption>Clicca sullo schema per aprirlo a grandezza piena.</figcaption>
+  </figure>
+</main>
+
+<footer class="piede">
+  <div class="dentro">
+    <p>birdsongtech — monitoraggio bioacustico del Monumento Naturale Palude di Torre Flavia. Area protetta gestita dalla <a href="https://www.cittametropolitanaroma.it/homepage/aree-tematiche/ambiente/aree-protette-tutela-della-flora-della-biodiversita/" target="_blank" rel="noopener">Città Metropolitana di Roma Capitale</a>.</p>
+    <p>Contatti: <a href="mailto:info@birdsongtech.it">info@birdsongtech.it</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

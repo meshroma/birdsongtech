@@ -39,7 +39,7 @@ CREDITI = os.path.join(CARTELLA_FOTO, "crediti.json")
 SCELTE = os.path.join(CARTELLA_FOTO, "scelte.csv")
 LARGHEZZA, ALTEZZA = 800, 600
 # Wikimedia chiede un User-Agent che identifichi il progetto e un contatto
-UA = "birdsongtech/1.0 (https://www.birdsongtech.it; birdsongtech@gmail.com)"
+UA = "birdsongtech/1.0 (https://www.birdsongtech.it; info@birdsongtech.it)"
 # licenze libere che permettono la ripubblicazione indicando autore e licenza.
 # Esclusa la GFDL: richiederebbe di pubblicare il testo integrale della licenza.
 LICENZE_OK = ("cc by", "cc-by", "cc0", "public domain", "pd", "cc sa", "cc-sa", "fal", "free art")

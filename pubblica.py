@@ -240,7 +240,7 @@ def metadati_item(anno, mese):
         "date": f"{anno}-{mese:02d}",
         "language": "ita",
         "licenseurl": LICENZA,
-        "contact": "birdsongtech@gmail.com",
+        "contact": "info@birdsongtech.it",
     }
     return md
 

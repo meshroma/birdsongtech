@@ -11,7 +11,7 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
   - **Visualizzatore 3D** (`player.html`): motore di venomez-viper adattato, punti e linee più luminosi, logo, scheda con foto, presenza a Torre Flavia e dati del rilevamento, microfono.
 - Stazione unica, chiamata ovunque "Monumento Naturale Palude di Torre Flavia". Coordinate: 41.95970 N, 12.05215 E.
 - **116 specie** in `raspberry/specie.csv`: quelle presenti regolarmente secondo la checklist Battisti et al. 2021. Ognuna ha una **foto** da Wikimedia Commons (800×600) con autore e licenza, in `assets/specie/`.
-- Contatti: birdsongtech@gmail.com.
+- Contatti: info@birdsongtech.it.
 
 **Pubblicazione dati**
 - `pubblica.py` legge il log, aggiorna il database, associa i `.wav` messi in `da_importare/`, li carica su Internet Archive e genera `data/rilevamenti.js`.

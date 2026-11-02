@@ -3,7 +3,7 @@
 Monitoraggio bioacustico automatico degli uccelli nel **Monumento Naturale Palude di Torre Flavia** (Ladispoli, Roma), con un archivio pubblico dove chiunque può cercare, ascoltare e vedere in 3D i canti registrati.
 
 - Sito: [www.birdsongtech.it](https://www.birdsongtech.it)
-- Contatti: birdsongtech@gmail.com
+- Contatti: info@birdsongtech.it
 
 ## Come funziona
 
