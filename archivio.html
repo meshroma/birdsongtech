@@ -17,14 +17,17 @@
   .intro h1{font-size:clamp(32px,4.2vw,48px)}
   .intro p{margin:10px 0 0}
 
-  .filtri{display:grid;grid-template-columns:minmax(220px,1.8fr) repeat(2,minmax(150px,1fr)) minmax(190px,1.2fr);gap:14px;align-items:end;
+  .filtri{display:grid;grid-template-columns:minmax(200px,1.4fr) repeat(2,minmax(140px,.9fr)) minmax(300px,1.9fr);gap:14px;align-items:end;
     background:rgba(37,43,47,.9);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px 20px}
   .campo{display:flex;flex-direction:column;gap:6px;min-width:0}
   .campo label{font-size:13px;font-weight:500;color:var(--piuma)}
   .campo input,.campo select{font:inherit;font-size:15px;color:var(--testo);background:var(--grafite);border:1px solid var(--linea);
     border-radius:10px;padding:10px 12px;width:100%;min-width:0;color-scheme:dark}
   .campo input:focus,.campo select:focus{border-color:var(--arancio);outline:none;box-shadow:0 0 0 3px rgba(248,126,46,.25)}
-  .campo input[type=range]{padding:0;accent-color:var(--arancio);height:38px;background:none;border:none;box-shadow:none}
+  .campo .etichetta{font-size:13px;font-weight:500;color:var(--piuma)}
+  .pallini{display:flex;flex-wrap:wrap;gap:6px 14px;min-height:42px;align-items:center;font-size:14px}
+  .pallini label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+  .pallini input{accent-color:var(--arancio);width:16px;height:16px;margin:0}
   .riga-sotto{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;font-size:14px;color:var(--piuma)}
   .spunta{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
   .spunta input{accent-color:var(--arancio);width:16px;height:16px}
@@ -91,8 +94,13 @@
       <input id="f-al" type="date">
     </div>
     <div class="campo">
-      <label for="f-conf">Affidabilità minima: <output id="o-conf">0%</output></label>
-      <input id="f-conf" type="range" min="0" max="100" step="5" value="0">
+      <span class="etichetta" id="l-conf">Affidabilità</span>
+      <div class="pallini" role="radiogroup" aria-labelledby="l-conf">
+        <label><input type="radio" name="conf" value="" checked> Tutte</label>
+        <label><input type="radio" name="conf" value="80"> fino all'80%</label>
+        <label><input type="radio" name="conf" value="90"> 80-90%</label>
+        <label><input type="radio" name="conf" value="100"> 90-100%</label>
+      </div>
     </div>
     <div class="riga-sotto">
       <label class="spunta"><input id="f-audio" type="checkbox"> Solo canti con audio da ascoltare</label>
@@ -136,7 +144,11 @@
 (function(){
   const {D, esc, dataBreve, ora, confHTML, bottoneAscolta, specieConteggio} = BS;
   const $ = id => document.getElementById(id);
-  const f = {testo:$('f-testo'), dal:$('f-dal'), al:$('f-al'), conf:$('f-conf'), audio:$('f-audio')};
+  const f = {testo:$('f-testo'), dal:$('f-dal'), al:$('f-al'), audio:$('f-audio')};
+  const pallini = [...document.querySelectorAll('input[name=conf]')];
+  const fascia = () => (pallini.find(x => x.checked) || {}).value || '';
+  /* fasce di affidabilita': 80 = fino all'80%, 90 = 80-90%, 100 = 90-100% */
+  const nellaFascia = (s, v) => !v || (v === '80' ? s < 0.80 : v === '90' ? s >= 0.80 && s < 0.90 : s >= 0.90);
   let ordine = {col:'quando', dir:-1};
 
   /* opzioni */
@@ -150,7 +162,7 @@
   f.dal.value = q.get('dal') || '';
   f.al.value = q.get('al') || '';
   if (q.get('giorno')) { f.dal.value = f.al.value = q.get('giorno'); }
-  f.conf.value = q.get('conf') || 0;
+  { const v = q.get('conf') || ''; const p = pallini.find(x => x.value === v); if (p) p.checked = true; }
   f.audio.checked = q.get('audio') === '1';
 
   const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
@@ -160,20 +172,19 @@
     if (f.testo.value.trim()) p.set('specie', f.testo.value.trim());
     if (f.dal.value) p.set('dal', f.dal.value);
     if (f.al.value) p.set('al', f.al.value);
-    if (+f.conf.value) p.set('conf', f.conf.value);
+    if (fascia()) p.set('conf', fascia());
     if (f.audio.checked) p.set('audio', '1');
     const s = p.toString();
     history.replaceState(null, '', s ? '?' + s : location.pathname);
   }
 
   function mostra(){
-    $('o-conf').textContent = f.conf.value + '%';
-    const t = norm(f.testo.value), min = +f.conf.value / 100;
+    const t = norm(f.testo.value), v = fascia();
     let lista = D.rilevamenti.filter(r =>
       (!t || norm(r.specie).includes(t) || norm(r.sci).includes(t)) &&
       (!f.dal.value || r.data >= f.dal.value) &&
       (!f.al.value || r.data <= f.al.value) &&
-      (r.score >= min - 1e-9) &&
+      nellaFascia(r.score, v) &&
       (!f.audio.checked || r.audio));
 
     const chiave = {
@@ -202,6 +213,7 @@
   }
 
   for (const el of Object.values(f)) el.addEventListener('input', mostra);
+  pallini.forEach(x => x.addEventListener('change', mostra));
   document.querySelectorAll('th[data-col] button').forEach(b => b.addEventListener('click', () => {
     const th = b.parentElement, col = th.dataset.col;
     ordine = {col, dir: ordine.col === col ? -ordine.dir : (col === 'quando' || col === 'score' ? -1 : 1)};
@@ -209,7 +221,7 @@
     th.setAttribute('aria-sort', ordine.dir > 0 ? 'ascending' : 'descending');
     mostra();
   }));
-  function azzera(){ f.testo.value=''; f.dal.value=''; f.al.value=''; f.conf.value=0; f.audio.checked=false; mostra(); }
+  function azzera(){ f.testo.value=''; f.dal.value=''; f.al.value=''; pallini[0].checked=true; f.audio.checked=false; mostra(); }
   $('azzera').addEventListener('click', azzera);
   $('azzera2').addEventListener('click', azzera);
   mostra();

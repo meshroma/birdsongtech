@@ -225,6 +225,7 @@ function mostraErrore(t){$('errore').textContent=t;$('errore').style.display='bl
       $('altri-lista').innerHTML=altri.map(x=>`<li><a href="player.html?id=${encodeURIComponent(x.id)}"><span>${dataLunga(x.data)}</span><small>ore ${x.ora.slice(0,5)}</small></a></li>`).join('');
     }
   }
+  if(!canto.record){ $('b-mic').parentElement.style.display='none'; }   // canto dimostrativo: niente microfono
   if(canto.audio){
     $('b-play').disabled=false;
     $('l-scarica').href=canto.audio; $('l-scarica').hidden=false;

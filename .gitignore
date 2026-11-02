@@ -186,3 +186,6 @@ da_importare/
 audio/
 # anteprima locale delle foto (generata da foto_specie.py)
 assets/specie/anteprima.html
+
+# documenti per l ente gestore (non pubblicati su GitHub)
+presentazione/

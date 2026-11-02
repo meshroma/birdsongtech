@@ -1,72 +1,54 @@
-# 🦅 REPORT DI FINE SESSIONE: Ecosistema Backend & Jamstack (Torre Flavia)
+# Punto della situazione - 2 novembre 2026
 
-**Data di rilascio:** 30 Ottobre 2026, ore 15:48 CET  
+Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `docs/ISTRUZIONI.md`, `docs/PROTOCOLLO_LORA.md` e `raspberry/LEGGIMI.md`.
 
-**Stato del Software (PC di Casa):** COMPLETATO AL 100% E RILASCIATO LOCALMENTE.  
+## Fatto
 
----
+**Sito** (GitHub Pages, in futuro www.birdsongtech.it)
+- Tre pagine con il logo birdsongtech, colori grafite e arancio, sfondo grigio uniforme:
+  - **Home**: ultimo canto con foto, i 5 passaggi "Dal canneto al tuo schermo", mappa OpenStreetMap senza chiave, specie ascoltate, ringraziamenti alla Città Metropolitana di Roma Capitale.
+  - **Archivio**: ricerca per specie, date, affidabilità e "solo con audio".
+  - **Visualizzatore 3D** (`player.html`): motore di venomez-viper adattato, punti e linee più luminosi, logo, scheda con foto, presenza a Torre Flavia e dati del rilevamento, microfono.
+- Stazione unica, chiamata ovunque "Monumento Naturale Palude di Torre Flavia". Coordinate: 41.95970 N, 12.05215 E.
+- **116 specie** in `raspberry/specie.csv`: quelle presenti regolarmente secondo la checklist Battisti et al. 2021. Ognuna ha una **foto** da Wikimedia Commons (800×600) con autore e licenza, in `assets/specie/`.
+- Contatti: birdsongtech@gmail.com.
 
-## 🟢 1. TRAGUARDI TECNICI RAGGIUNTI
+**Pubblicazione dati**
+- `pubblica.py` legge il log, aggiorna il database, associa i `.wav` messi in `da_importare/`, li carica su Internet Archive e genera `data/rilevamenti.js`.
+- `aggiorna_birdsong.bat`: un doppio clic scarica il log dal Raspberry (pi@192.168.1.100), pubblica e fa il push su GitHub.
 
-Abbiamo ingegnerizzato e blindato l'intera infrastruttura dati Jamstack sul computer di casa:
+**Raspberry Pi** (stazione base)
+- Nuovo `gateway.py`, installato e funzionante: protocollo BS1, conferme con l'ora esatta, scrittura di `/home/pi/birdsong_log.csv`.
+- Display LCD, driver e servizi **non toccati**. Telegram tolto.
 
-*   **Database SQLite Relazionale (`birdsong_history.db`):** Tabella creata, espansa e ottimizzata con indici rapidi su `timestamp`, `nodo` e `specie_ita`.
+**Radio**
+- Firmware 2.7.26.
+- Heltec V4 in campo: CLIENT_MUTE, antenna esterna su palo da 4 m.
+- Heltec V3 alla base: CLIENT_BASE, a 15 m di altezza.
+- Canale privato `birdsongtech`, primario. Distanza 2,5 km, con nodi della rete in mezzo.
+- Bluetooth della V4 acceso per la manutenzione. La configurazione dei nodi la gestisci tu.
 
-*   **Evoluzione dei Metadati (Ricerca Scientifica):** Il database e l'interfaccia ora tracciano nativamente la telemetria di campo completa:
+## Decisioni prese
 
-    *   Percentuale batteria del nodo (`batteria_perc`).
+- Audio su **Internet Archive**, un item al mese. Pagine, dati e foto su **GitHub**.
+- File audio: `TF01_AAAAMMGG_hhmmss.wav`, al massimo 16 s.
+- Due trasmissioni al giorno, con l'ora sincronizzata dal Raspberry tramite i messaggi BS1.
+- Ascolto della XIAO:
+  - ottobre-febbraio: spenta dalle 23 alle 5;
+  - marzo e luglio-settembre: spenta dalle 23 fino a 90 minuti prima dell'alba;
+  - aprile-giugno: sempre accesa.
+- **Fase di test: V4 sempre accesa**, che fa anche da caricatore. Alimentazione: pannello 18 V 10 W con riduttore a 5 V, 2 × EVE 18650 in parallelo.
 
-    *   Condizioni microclimatiche (`temperatura` in °C, `pressione` in hPa).
+## Da fare
 
-    *   Coordinate geografiche precise (`gps_lat`, `gps_lon`).
-
-    *   Quota altimetrica rispetto al mare (`altitudine_mslm` in metri s.l.m.).
-
-*   **Motore di Ricerca Reattivo (`ricerca.html`):** Interfaccia di consultazione client-side istantanea, dotata di filtri incrociati JavaScript per Specie, Nodo e soglia di confidenza TinyML.
-
-*   **Automazione Desktop in un Click (`aggiorna_birdsong.bat`):** Script batch di Windows configurato per automatizzare la sequenza di iniezione dati nel DB e la rigenerazione simultanea dell'archivio storico e del motore di ricerca.
-
----
-
-## 📁 2. MAPPA DELLA CARTELLA DI PROGETTO (`birdsong-backend`)
-
-La tua repository su GitHub Desktop è ora così strutturata e allineata:
-
-*   `ingestore.py` ➔ Script di parsing del CSV e generazione dell'albero HTML (`archivio/anno/mese/giorno.html`).
-
-*   `generatore_ricerca.py` ➔ Script che interroga il DB ed esporta la dashboard con layout grafico `ricerca.html`.
-
-*   `aggiorna_birdsong.bat` ➔ Il comando batch centrale per rinfrescare tutto in un click.
-
-*   `birdsong_log.csv` ➔ File di log con i dati di test ambientali ed altimetrici espansi.
-
-*   `birdsong_history.db` ➔ Il database SQLite locale.
-
-*   📂 `assets/` ➔ **[Nuova Cartella]** Creata per ospitare i tuoi file grafici personalizzati.
-
----
-
-## 📋 3. ORDINE DEL GIORNO PER LA PROSSIMA SESSIONE
-
-Al riavvio dello sviluppo, potremo scegliere tra due percorsi indipendenti a seconda delle tue esigenze:
-
-### 🎨 Filone Grafico (Preparazione Asset)
-
-Prima di caricare online l'archivio, puoi inserire nella cartella `assets/` i tuoi file pronti:
-
-1.  `logo.png` ➔ PNG a sfondo trasparente (consigliato 512x512px).
-
-2.  `background.jpg` ➔ Immagine panoramica di Torre Flavia, molto scurita o sfocata (1920x1080px).
-
-3.  `favicon.ico` ➔ Icona per la scheda del browser (32x32px).
-
-### 🎛️ Filone Hardware (Sblocco Nodo Palude)
-
-Non appena i moduli saranno fisicamente sul tuo tavolo, passeremo alla **Fase 1 (Cablaggio di campo)**:
-
-*   Mappatura delle linee **I2S** per il microfono **INMP441** sulla scheda **XIAO ESP32-S3 Sense**.
-
-*   Procedura di disattivazione hardware della fotocamera per massimizzare il risparmio energetico.
-
-*   Connessioni seriali incrociate (TX/RX) e linee di wake-up logico tra la XIAO (agente TinyML acustico) e la scheda radio **Heltec** (Sensor Node per la Mesh).
-
+1. Copiare sul Raspberry le tabelle aggiornate:
+   `scp raspberry\stazioni.csv raspberry\specie.csv pi@192.168.1.100:/home/pi/`, poi `ssh -t pi@192.168.1.100 "sudo systemctl restart birdsong"`.
+2. Account su archive.org, poi `pip install internetarchive` e `ia configure`. La prima volta conviene provare con `ARCHIVE_PROVA = True` in `pubblica.py`.
+3. **Quando arriva la XIAO:**
+   - prova della seriale TEXTMSG tra V4 e PC (sezione 1 di `docs/PROTOCOLLO_LORA.md`);
+   - prova dal telefono dei messaggi `BS1 H` e `BS1 D`, poi cancellare il rilevamento di prova sul Pi;
+   - firmware della XIAO: ascolto, riconoscimento, coda, protocollo BS1, orari, nomi dei file;
+   - allineare `specie.csv` alle etichette del modello AI.
+4. Durante il test, misurare il consumo di V4 e XIAO e la corrente di carica. Poi decidere se tenere la V4 sempre accesa o usare un modulo MPPT separato.
+5. Dominio www.birdsongtech.it: registrarlo, poi record CNAME `www` → `meshroma.github.io`, impostazioni Pages, HTTPS.
+6. Chiedere a venomez-viper il permesso per il visualizzatore 3D: il progetto originale non ha una licenza dichiarata.
