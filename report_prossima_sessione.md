@@ -8,7 +8,7 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
 - Tre pagine con il logo birdsongtech, colori grafite e arancio, sfondo grigio uniforme:
   - **Home**: ultimo canto con foto, i 5 passaggi "Dal canneto al tuo schermo", mappa OpenStreetMap senza chiave, specie ascoltate, ringraziamenti alla Città Metropolitana di Roma Capitale.
   - **Archivio**: ricerca per specie, date, affidabilità e "solo con audio".
-  - **Visualizzatore 3D** (`player.html`): motore di venomez-viper adattato, punti e linee più luminosi, logo, scheda con foto, presenza a Torre Flavia e dati del rilevamento, microfono.
+  - **Visualizzatore 3D** (`player.html`): motore di venomez-viper adattato, punti e linee più luminosi, logo, scheda con foto, presenza a Torre Flavia e dati del rilevamento (niente microfono: la registrazione dei visitatori non è prevista).
 - Stazione unica, chiamata ovunque "Monumento Naturale Palude di Torre Flavia". Coordinate: 41.95970 N, 12.05215 E.
 - **116 specie** in `raspberry/specie.csv`: quelle presenti regolarmente secondo la checklist Battisti et al. 2021. Ognuna ha una **foto** da Wikimedia Commons (800×600) con autore e licenza, in `assets/specie/`.
 - Contatti: info@birdsongtech.it.
@@ -50,5 +50,9 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
    - firmware della XIAO: ascolto, riconoscimento, coda, protocollo BS1, orari, nomi dei file;
    - allineare `specie.csv` alle etichette del modello AI.
 4. Durante il test, misurare il consumo di V4 e XIAO e la corrente di carica. Poi decidere se tenere la V4 sempre accesa o usare un modulo MPPT separato.
-5. Dominio www.birdsongtech.it: registrarlo, poi record CNAME `www` → `meshroma.github.io`, impostazioni Pages, HTTPS.
+5. Dominio www.birdsongtech.it: **registrato**. Ora funziona con un reindirizzamento nascosto di Aruba. Da sostituire con il collegamento diretto a GitHub Pages:
+   - in Aruba: disattivare il reindirizzamento e creare il record CNAME `www` → `meshroma.github.io`; per l'indirizzo senza www, 4 record A verso GitHub;
+   - su GitHub: Settings → Pages → Custom domain `www.birdsongtech.it`, poi Enforce HTTPS;
+   - sul PC: Pull da GitHub Desktop prima del successivo `aggiorna_birdsong.bat`.
+   Con il reindirizzamento nascosto l'indirizzo resta sempre la home, quindi i link non si possono condividere; il sito potrebbe vedersi rimpicciolito su telefono.
 6. Chiedere a venomez-viper il permesso per il visualizzatore 3D: il progetto originale non ha una licenza dichiarata.
