@@ -19,6 +19,7 @@ def genera_dashboard():
        # 2. Generazione delle righe della tabella in formato HTML
     tabella_html = ""
     for r in righe:
+        r = list(r) + [''] * (9 - len(r)) if len(r) < 9 else r[:9]
         timestamp, nodo, specie, conf, batt, temp, press, alt, audio = r
         conf_perc = f"{int(conf * 100)}%" if conf else "N/D"
         
