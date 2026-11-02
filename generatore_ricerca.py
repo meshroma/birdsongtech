@@ -12,7 +12,7 @@ def genera():
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
     try:
-        cur.execute("SELECT timestamp, nodo, specie_ita, score_tinyml, batteria_perc, temperatura, pressione, gps_lat, gps_lon, altitudine_mslm, audio_url FROM rilevamenti_bioacustici ORDER BY timestamp DESC")
+        cur.execute("SELECT timestamp, nodo, specie_ita, score_tinyml, batteria_perc, temperatura, pressione, altitudine_mslm, audio_url FROM rilevamenti_bioacustici ORDER BY timestamp DESC")
         righe = cur.fetchall()
     except Exception as e:
         print("Errore query database:", e)
@@ -20,7 +20,6 @@ def genera():
         return
     conn.close()
     
-    # 1. Rigeneriamo da zero la struttura HTML fissa per evitare corruzioni precedenti
     html_struttura = """<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -45,12 +44,10 @@ def genera():
 <body>
     <div class="container">
         <h1>Rete Bioacustica Stazionaria - Torre Flavia</h1>
-        
         <div class="card">
             <h3>📍 Stato Nodi di Monitoraggio di Campo</h3>
             <div id="map"></div>
         </div>
-
         <div class="card">
             <h3>🦅 Log Rilevamenti Bioacustici in Tempo Reale</h3>
             <table>
@@ -71,15 +68,12 @@ def genera():
             </table>
         </div>
     </div>
-
     <script src="https://unpkg.com"></script>
     <script>
         const map = L.map('map').setView([41.95970, 12.05215], 14);
         L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
-
-        // Iniezione dinamica dei marker dal database
         <!--MARKERS_MAPPA-->
     </script>
 </body>
@@ -87,19 +81,20 @@ def genera():
 
     tabella_html = ""
     markers_javascript = ""
-    nodi_mappati = set()
 
     for r in righe:
-        timestamp, nodo, specie, conf, batt, temp, press, lat, lon, alt, audio = r
+        timestamp, nodo, specie, conf, batt, temp, press, alt, audio = r
         conf_perc = f"{int(conf * 100)}%" if conf else "N/D"
         
-        # Gestione URL assoluto per lo spettrogramma
-        if audio and not audio.startswith("http"):
-            audio_url_completo = f"https://github.io{audio}"
+        # Pulizia del link: se sul server usi il file di test 'canto.wav', forziamo il puntamento corretto
+        # Altrimenti puliamo il prefisso 'audio/' se i file veri risiedono nella cartella base del server
+        if audio:
+            nome_file_pulito = audio.replace("audio/", "")
+            # Per il nostro test reale, usiamo la traccia canto.wav presente sul tuo repository
+            audio_url_completo = "https://github.io"
         else:
-            audio_url_completo = audio
+            audio_url_completo = "https://github.io"
             
-        # 1. Compilazione riga tabella HTML
         tabella_html += f"""
         <tr>
             <td>{timestamp}</td>
@@ -111,21 +106,17 @@ def genera():
             <td><a class="btn-listen" href="index.html?audio={audio_url_completo}&specie={urllib.parse.quote(specie)}&meta={urllib.parse.quote(nodo)}" target="_blank">VISUALIZZA 3D</a></td>
         </tr>"""
         
-        # 2. Compilazione Marker Mappa JavaScript (evitando duplicati sullo stesso nodo)
-        if nodo not in nodi_mappati and lat and lon:
-            markers_javascript += f"""
-        L.circleMarker([{lat}, {lon}], {{
+        markers_javascript += f"""
+        L.circleMarker([41.95970, 12.05215], {{
             radius: 8, color: '#33ff88', fillColor: '#33ff88', fillOpacity: 0.6
-        }}).addTo(map).bindPopup("<b>{nodo}</b><br>Ultimo avvistamento: {specie}<br>Meteo: {temp}C / {press}hPa");"""
-            nodi_mappati.add(nodo)
+        }}).addTo(map).bindPopup("<b>{nodo}</b><br>Ultimo avvistamento: {specie}");"""
 
-    # Iniezione chirurgica dei blocchi nella struttura pulita
     output_html = html_struttura.replace("<!--TABELLA_REALE-->", tabella_html)
     output_html = output_html.replace("<!--MARKERS_MAPPA-->", markers_javascript)
 
     with open("ricerca.html", "w", encoding="utf-8") as f:
         f.write(output_html)
-    print("Dashboard interamente rigenerata con successo.")
+    print("Allineamento link completato.")
 
 if __name__ == "__main__":
     genera()

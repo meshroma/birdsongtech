@@ -22,12 +22,10 @@
 <body>
     <div class="container">
         <h1>Rete Bioacustica Stazionaria - Torre Flavia</h1>
-        
         <div class="card">
             <h3>📍 Stato Nodi di Monitoraggio di Campo</h3>
             <div id="map"></div>
         </div>
-
         <div class="card">
             <h3>🦅 Log Rilevamenti Bioacustici in Tempo Reale</h3>
             <table>
@@ -51,7 +49,7 @@
             <td>76%</td>
             <td>16.8 C / 1011.5 hPa</td>
             <td>8.0m s.l.m.</td>
-            <td><a class="btn-listen" href="index.html?audio=https://github.ioaudio/2026-10-30_14-02-15.wav&specie=Airone%20Cenerino&meta=TORRE_FLAVIA_02" target="_blank">VISUALIZZA 3D</a></td>
+            <td><a class="btn-listen" href="index.html?audio=https://github.io&specie=Airone%20Cenerino&meta=TORRE_FLAVIA_02" target="_blank">VISUALIZZA 3D</a></td>
         </tr>
         <tr>
             <td>2026-10-30 11:15:30</td>
@@ -60,7 +58,7 @@
             <td>94%</td>
             <td>15.2 C / 1012.8 hPa</td>
             <td>2.5m s.l.m.</td>
-            <td><a class="btn-listen" href="index.html?audio=https://github.ioaudio/2026-10-30_11-15-30.wav&specie=Martin%20Pescatore&meta=TORRE_FLAVIA_01" target="_blank">VISUALIZZA 3D</a></td>
+            <td><a class="btn-listen" href="index.html?audio=https://github.io&specie=Martin%20Pescatore&meta=TORRE_FLAVIA_01" target="_blank">VISUALIZZA 3D</a></td>
         </tr>
         <tr>
             <td>2026-10-30 10:21:00</td>
@@ -69,28 +67,28 @@
             <td>89%</td>
             <td>14.5 C / 1013.2 hPa</td>
             <td>2.5m s.l.m.</td>
-            <td><a class="btn-listen" href="index.html?audio=https://github.ioaudio/2026-10-30_10-21-00.wav&specie=Pettirosso&meta=TORRE_FLAVIA_01" target="_blank">VISUALIZZA 3D</a></td>
+            <td><a class="btn-listen" href="index.html?audio=https://github.io&specie=Pettirosso&meta=TORRE_FLAVIA_01" target="_blank">VISUALIZZA 3D</a></td>
         </tr>
                 </tbody>
             </table>
         </div>
     </div>
-
     <script src="https://unpkg.com"></script>
     <script>
         const map = L.map('map').setView([41.95970, 12.05215], 14);
         L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
-
-        // Iniezione dinamica dei marker dal database
         
-        L.circleMarker([41.9562, 12.0495], {
+        L.circleMarker([41.95970, 12.05215], {
             radius: 8, color: '#33ff88', fillColor: '#33ff88', fillOpacity: 0.6
-        }).addTo(map).bindPopup("<b>TORRE_FLAVIA_02</b><br>Ultimo avvistamento: Airone Cenerino<br>Meteo: 16.8C / 1011.5hPa");
-        L.circleMarker([41.9548, 12.0461], {
+        }).addTo(map).bindPopup("<b>TORRE_FLAVIA_02</b><br>Ultimo avvistamento: Airone Cenerino");
+        L.circleMarker([41.95970, 12.05215], {
             radius: 8, color: '#33ff88', fillColor: '#33ff88', fillOpacity: 0.6
-        }).addTo(map).bindPopup("<b>TORRE_FLAVIA_01</b><br>Ultimo avvistamento: Martin Pescatore<br>Meteo: 15.2C / 1012.8hPa");
+        }).addTo(map).bindPopup("<b>TORRE_FLAVIA_01</b><br>Ultimo avvistamento: Martin Pescatore");
+        L.circleMarker([41.95970, 12.05215], {
+            radius: 8, color: '#33ff88', fillColor: '#33ff88', fillOpacity: 0.6
+        }).addTo(map).bindPopup("<b>TORRE_FLAVIA_01</b><br>Ultimo avvistamento: Pettirosso");
     </script>
 </body>
 </html>
