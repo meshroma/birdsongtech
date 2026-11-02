@@ -1,0 +1,79 @@
+window.BIRDSONG = {
+ "aggiornato": "2026-11-02 15:30:48",
+ "stazione": {
+  "lat": 41.9597,
+  "lon": 12.05215
+ },
+ "nodi": [
+  {
+   "nodo": "TORRE_FLAVIA_01",
+   "rilevamenti": 2,
+   "ultimo": "2026-10-30 11:15:30",
+   "ultima_specie": "Martin Pescatore",
+   "batteria": 91,
+   "lat": 41.9548,
+   "lon": 12.0461,
+   "quota": 2.5
+  },
+  {
+   "nodo": "TORRE_FLAVIA_02",
+   "rilevamenti": 1,
+   "ultimo": "2026-10-30 14:02:15",
+   "ultima_specie": "Airone Cenerino",
+   "batteria": 85,
+   "lat": 41.9562,
+   "lon": 12.0495,
+   "quota": 8.0
+  }
+ ],
+ "rilevamenti": [
+  {
+   "id": "20261030-140215-TORRE-FLAVIA-02",
+   "data": "2026-10-30",
+   "ora": "14:02:15",
+   "nodo": "TORRE_FLAVIA_02",
+   "specie": "Airone Cenerino",
+   "sci": "Ardea cinerea",
+   "score": 0.76,
+   "audio": null,
+   "batteria": 85,
+   "temperatura": 16.8,
+   "pressione": 1011.5,
+   "lat": 41.9562,
+   "lon": 12.0495,
+   "quota": 8.0
+  },
+  {
+   "id": "20261030-111530-TORRE-FLAVIA-01",
+   "data": "2026-10-30",
+   "ora": "11:15:30",
+   "nodo": "TORRE_FLAVIA_01",
+   "specie": "Martin Pescatore",
+   "sci": "Alcedo atthis",
+   "score": 0.94,
+   "audio": null,
+   "batteria": 91,
+   "temperatura": 15.2,
+   "pressione": 1012.8,
+   "lat": 41.9548,
+   "lon": 12.0461,
+   "quota": 2.5
+  },
+  {
+   "id": "20261030-102100-TORRE-FLAVIA-01",
+   "data": "2026-10-30",
+   "ora": "10:21:00",
+   "nodo": "TORRE_FLAVIA_01",
+   "specie": "Pettirosso",
+   "sci": "Erithacus rubecula",
+   "score": 0.89,
+   "audio": null,
+   "batteria": 92,
+   "temperatura": 14.5,
+   "pressione": 1013.2,
+   "lat": 41.9548,
+   "lon": 12.0461,
+   "quota": 2.5
+  }
+ ]
+};
