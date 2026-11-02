@@ -110,7 +110,8 @@
     </div>
     <aside class="ultimo" id="ultimo" aria-live="polite">
       <h2>Ultimo canto riconosciuto</h2>
-      <p class="nota">Nessun rilevamento pubblicato per ora.</p>
+      <p class="nota">I primi canti della palude saranno pubblicati qui a breve. Intanto puoi ascoltare un canto di prova nel visualizzatore 3D.</p>
+      <p style="margin:18px 0 0"><a class="btn" href="player.html?demo=1">Ascolta il canto di prova</a></p>
     </aside>
   </section>
 
@@ -192,7 +193,7 @@
     <li><h3>Stazione nel canneto</h3>
       <p><b>${n.rilevamenti}</b> ${n.rilevamenti === 1 ? 'canto riconosciuto' : 'canti riconosciuti'} · ultimo: <b>${esc(n.ultima_specie)}</b>, ${dataLunga(n.ultimo.slice(0,10))}</p>
       <p>${n.quota != null ? `Quota ${n.quota} m s.l.m.` : ''}${n.batteria != null ? ` · batteria ${n.batteria}%` : ''}</p>
-    </li>`).join('') : '<li><p>La stazione non ha ancora inviato dati.</p></li>';
+    </li>`).join('') : '<li><h3>Stazione nel canneto</h3><p>In attesa dei primi canti: compariranno qui non appena saranno pubblicati.</p></li>';
 
   /* mappa */
   const box = document.getElementById('mappa');
@@ -203,11 +204,14 @@
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
     const punti = [];
-    for (const n of D.nodi) {
+    /* la stazione compare sempre, anche prima che ci siano canti pubblicati */
+    const stazioni = D.nodi.length ? D.nodi : [{lat: D.stazione.lat, lon: D.stazione.lon, rilevamenti: 0}];
+    for (const n of stazioni) {
       const ll = [n.lat, n.lon]; punti.push(ll);
+      const info = n.rilevamenti ? `${n.rilevamenti} canti · ultimo: ${esc(n.ultima_specie)}<br><a href="archivio.html">Vedi i canti</a>` : 'In attesa dei primi canti';
       L.circleMarker(ll, {radius:9, color:'#f87e2e', weight:2, fillColor:'#f87e2e', fillOpacity:.45})
         .addTo(map)
-        .bindPopup(`<b>Stazione di ascolto</b><br>${n.rilevamenti} canti · ultimo: ${esc(n.ultima_specie)}<br><a href="archivio.html">Vedi i canti</a>`);
+        .bindPopup(`<b>Stazione di ascolto</b><br>${info}`);
     }
     if (punti.length > 1) map.fitBounds(punti, {padding:[60,60], maxZoom:16});
   } else {

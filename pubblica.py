@@ -44,6 +44,9 @@ ARCHIVE_PREFISSO = "birdsongtech-torreflavia"  # gli item saranno birdsongtech-t
 ARCHIVE_PROVA = False                       # True = carica in "test_collection" (cancellata da archive.org dopo 30 giorni)
 LICENZA = "https://creativecommons.org/licenses/by-nc-sa/4.0/"   # licenza delle registrazioni
 MODO_LOCALE = "--locale" in sys.argv
+# Rilevamenti dimostrativi: restano visibili sul sito anche senza audio.
+# Quando arrivano i primi canti veri, svuota l'elenco:  DIMOSTRATIVI = set()
+DIMOSTRATIVI = {"2026-10-30 10:21:00", "2026-10-30 11:15:30", "2026-10-30 14:02:15"}
 
 # Posizione della postazione usata quando una riga non ha coordinate GPS
 STAZIONE_DEFAULT = {"lat": 41.95970, "lon": 12.05215}
@@ -350,12 +353,15 @@ def esporta_dati(conn):
         SELECT timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, audio_locale, batteria_perc,
                temperatura, pressione, gps_lat, gps_lon, altitudine_mslm
         FROM rilevamenti_bioacustici ORDER BY timestamp DESC""")
-    rilevamenti, nodi = [], {}
+    rilevamenti, nodi, in_attesa = [], {}, 0
     for (ts, nodo, specie, sci, score, url, locale, bat, temp, pres, lat, lon, alt) in cur.fetchall():
         if MODO_LOCALE:  # prova sul PC: file della cartella audio/
             audio = locale if locale and os.path.exists(os.path.join(CARTELLA, *locale.split("/"))) else None
         else:            # sito pubblico: solo i file gia' su archive.org
             audio = url
+        if not audio and ts not in DIMOSTRATIVI:   # i canti veri compaiono solo con l'audio gia' pubblicato
+            in_attesa += 1
+            continue
         data, ora = ts.split(" ")
         rilevamenti.append({
             "id": chiave_record(ts, nodo), "data": data, "ora": ora, "nodo": nodo,
@@ -387,8 +393,8 @@ def esporta_dati(conn):
     # versione .js: permette di aprire il sito anche con doppio clic, senza server
     with open(os.path.join(CARTELLA_DATI, "rilevamenti.js"), "w", encoding="utf-8") as f:
         f.write("window.BIRDSONG = " + testo + ";\n")
-    con_audio = sum(1 for r in rilevamenti if r["audio"])
-    print(f"[OK] Sito: {len(rilevamenti)} rilevamenti esportati ({con_audio} con audio), {len(nodi)} nodi"
+    print(f"[OK] Sito: {len(rilevamenti)} canti pubblicati"
+          + (f", {in_attesa} in attesa del file audio (compariranno dopo lo scarico dalla XIAO)" if in_attesa else "")
           + ("  [MODO LOCALE: non fare il push di questi dati]" if MODO_LOCALE else ""))
 
 

@@ -28,7 +28,7 @@
   .pallini{display:flex;flex-wrap:wrap;gap:6px 14px;min-height:42px;align-items:center;font-size:14px}
   .pallini label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
   .pallini input{accent-color:var(--arancio);width:16px;height:16px;margin:0}
-  .riga-sotto{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;font-size:14px;color:var(--piuma)}
+  .riga-sotto{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:12px;font-size:14px;color:var(--piuma)}
   .spunta{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
   .spunta input{accent-color:var(--arancio);width:16px;height:16px}
   .azzera{background:none;border:none;color:var(--arancio-chiaro);font:inherit;cursor:pointer;padding:4px 0;text-decoration:underline}
@@ -103,7 +103,6 @@
       </div>
     </div>
     <div class="riga-sotto">
-      <label class="spunta"><input id="f-audio" type="checkbox"> Solo canti con audio da ascoltare</label>
       <button type="button" class="azzera" id="azzera">Azzera i filtri</button>
     </div>
   </form>
@@ -144,7 +143,7 @@
 (function(){
   const {D, esc, dataBreve, ora, confHTML, bottoneAscolta, specieConteggio} = BS;
   const $ = id => document.getElementById(id);
-  const f = {testo:$('f-testo'), dal:$('f-dal'), al:$('f-al'), audio:$('f-audio')};
+  const f = {testo:$('f-testo'), dal:$('f-dal'), al:$('f-al')};
   const pallini = [...document.querySelectorAll('input[name=conf]')];
   const fascia = () => (pallini.find(x => x.checked) || {}).value || '';
   /* fasce di affidabilita': 80 = fino all'80%, 90 = 80-90%, 100 = 90-100% */
@@ -163,7 +162,6 @@
   f.al.value = q.get('al') || '';
   if (q.get('giorno')) { f.dal.value = f.al.value = q.get('giorno'); }
   { const v = q.get('conf') || ''; const p = pallini.find(x => x.value === v); if (p) p.checked = true; }
-  f.audio.checked = q.get('audio') === '1';
 
   const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
 
@@ -173,7 +171,6 @@
     if (f.dal.value) p.set('dal', f.dal.value);
     if (f.al.value) p.set('al', f.al.value);
     if (fascia()) p.set('conf', fascia());
-    if (f.audio.checked) p.set('audio', '1');
     const s = p.toString();
     history.replaceState(null, '', s ? '?' + s : location.pathname);
   }
@@ -184,20 +181,19 @@
       (!t || norm(r.specie).includes(t) || norm(r.sci).includes(t)) &&
       (!f.dal.value || r.data >= f.dal.value) &&
       (!f.al.value || r.data <= f.al.value) &&
-      nellaFascia(r.score, v) &&
-      (!f.audio.checked || r.audio));
+      nellaFascia(r.score, v));
 
     const chiave = {
       quando: r => r.data + ' ' + r.ora, specie: r => norm(r.specie), score: r => r.score
     }[ordine.col];
     lista.sort((a,b) => (chiave(a) > chiave(b) ? 1 : chiave(a) < chiave(b) ? -1 : 0) * ordine.dir);
 
-    const conAudio = lista.filter(r => r.audio).length;
     $('conteggio').innerHTML = lista.length
-      ? `<b>${lista.length}</b> ${lista.length === 1 ? 'canto trovato' : 'canti trovati'}, ${conAudio} con audio da ascoltare`
+      ? `<b>${lista.length}</b> ${lista.length === 1 ? 'canto trovato' : 'canti trovati'}`
       : '';
     $('nessuno').hidden = lista.length > 0 || D.rilevamenti.length === 0;
     if (D.rilevamenti.length === 0) $('conteggio').textContent = "L'archivio è ancora vuoto: i canti compariranno qui dopo la prima pubblicazione.";
+    document.querySelector('.contenitore').hidden = D.rilevamenti.length === 0;
 
     $('righe').innerHTML = lista.map(r => {
       const meteo = [r.temperatura != null ? `${r.temperatura} °C` : null, r.pressione != null ? `${r.pressione} hPa` : null].filter(Boolean).join(' · ') || '—';
@@ -221,7 +217,7 @@
     th.setAttribute('aria-sort', ordine.dir > 0 ? 'ascending' : 'descending');
     mostra();
   }));
-  function azzera(){ f.testo.value=''; f.dal.value=''; f.al.value=''; pallini[0].checked=true; f.audio.checked=false; mostra(); }
+  function azzera(){ f.testo.value=''; f.dal.value=''; f.al.value=''; pallini[0].checked=true; mostra(); }
   $('azzera').addEventListener('click', azzera);
   $('azzera2').addEventListener('click', azzera);
   mostra();
