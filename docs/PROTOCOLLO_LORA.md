@@ -115,23 +115,13 @@ La coda vive nella flash della XIAO (es. LittleFS, file `coda.csv`), così sopra
 | Marzo, luglio - settembre | dalle 23:00 fino a **90 minuti prima dell'alba** |
 | Aprile - giugno | mai (usignoli, cannareccioni, rapaci notturni, migratori) |
 
-La XIAO calcola l'alba dalla data e dalle coordinate della stazione: 41.9548 N, 12.0461 E.
+La XIAO calcola l'alba dalla data e dalle coordinate della stazione: 41.9597 N, 12.0522 E.
 
 ## 7. Alimentazione
 
 ### Fase di test: V4 sempre accesa
 
-La V4 resta accesa e carica le batterie dal pannello (ingresso solare 4,7-6 V, dopo il riduttore 18 → 5 V). Per ridurne il consumo, configurala via USB con queste impostazioni:
-
-```
-meshtastic --set bluetooth.enabled false        (la configurazione si fa poi solo via USB)
-meshtastic --set network.wifi_enabled false
-meshtastic --set display.screen_on_secs 10
-meshtastic --set position.gps_mode DISABLED
-meshtastic --set position.position_broadcast_secs 43200
-meshtastic --set device.node_info_broadcast_secs 43200
-meshtastic --set telemetry.device_update_interval 43200
-```
+La V4 resta accesa e carica le batterie dal pannello (ingresso solare 4,7-6 V, dopo il riduttore 18 → 5 V). La configurazione dei nodi è gestita da te. Il Bluetooth resta acceso, per la manutenzione da sotto il palo.
 
 - La modalità risparmio di Meshtastic (`power.is_power_saving`) mette la scheda in sleep. Provala solo dopo aver verificato che il collegamento seriale con la XIAO funzioni, e ricontrolla che continui a funzionare anche con il risparmio attivo.
 - Durante il test misura con un tester USB, tra riduttore e Heltec, tre valori: il consumo della V4, quello della XIAO e la corrente di carica nelle ore di sole. Con quei numeri si decide la soluzione definitiva.
