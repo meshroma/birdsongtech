@@ -1,1 +1,1 @@
-window.BIRDSONG_STAT = {"aggiornato":"2026-11-03 09:12:11","soglia":0.8,"giorni":{"2026-10-30":{"canti":3,"t_min":14.5,"t_med":15.5,"t_max":16.8,"u_min":null,"u_med":null,"u_max":null,"p_med":1012.5,"r_med":null,"b_min":85,"b_max":92,"b_ult":85}}};
+window.BIRDSONG_STAT = {"aggiornato":"2026-11-03 09:55:29","soglia":0.8,"giorni":{"2026-10-30":{"canti":3,"t_min":14.5,"t_med":15.5,"t_max":16.8,"u_min":null,"u_med":null,"u_max":null,"p_med":1012.5,"r_med":null,"b_min":85,"b_max":92,"b_ult":85}}};
