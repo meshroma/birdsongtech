@@ -30,12 +30,15 @@ Monitoraggio bioacustico automatico degli uccelli nel **Monumento Naturale Palud
 | `index.html` | Home: ultimo canto, come funziona, mappa della stazione, specie, ringraziamenti |
 | `archivio.html` | Ricerca per specie, date e affidabilità |
 | `player.html` | Visualizzatore 3D del canto (`player.html?id=...`, `?demo=1` per il canto di prova) |
+| `schema.html` | Schema dei flussi di dati |
+| `statistiche.html` | Grafici mensili: canti validi al giorno, temperatura e punto di rugiada, umidità, pressione, batteria |
 | `pubblica.py` | Log CSV → database → audio su archive.org → dati del sito |
 | `aggiorna_birdsong.bat` | Il comando unico da lanciare con doppio clic |
 | `foto_specie.py` | Scarica da Wikimedia Commons una foto per specie (4:3, 800×600) con autore e licenza, in `assets/specie/` |
 | `prova_sito_locale.bat` | Apre il sito sul PC con gli audio locali, senza pubblicare nulla |
 | `assets/` | Logo, favicon, foto delle specie, stile e script comuni, librerie (three.js) |
-| `data/rilevamenti.js` / `.json` | Dati letti dal sito (generati, da non modificare a mano) |
+| `data/rilevamenti.js` / `.json`, `data/statistiche.js` | Dati letti dal sito (generati, da non modificare a mano) |
+| `telemetria.csv` | Batteria, temperatura, pressione e umidità inviate dalla stazione a ogni risveglio (scaricato dal Raspberry) |
 | `canto.wav` | Canto dimostrativo per il visualizzatore |
 | `ricerca.html`, `apri_3d.html` | Rimandano alle nuove pagine, così i vecchi link funzionano ancora |
 | `raspberry/` | Gateway LoRa della stazione base e tabelle delle specie e della stazione: vedi [raspberry/LEGGIMI.md](raspberry/LEGGIMI.md) |

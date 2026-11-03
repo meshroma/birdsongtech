@@ -37,6 +37,7 @@ Per seguirli in diretta: `ssh pi@192.168.1.100 "journalctl -u birdsong -f"` (Ctr
 ## Cosa produce
 
 - `/home/pi/birdsong_log.csv`: un rilevamento per riga, nel formato che legge `pubblica.py`, con il nome del file audio atteso (`TF01_20261102_064512.wav`). È il file che scarica `aggiorna_birdsong.bat`.
+- `/home/pi/telemetria.csv`: batteria, temperatura, pressione e umidità inviate dalla stazione a ogni risveglio (due volte al giorno). Serve alla pagina Statistiche e anche questo lo scarica `aggiorna_birdsong.bat`.
 - `/home/pi/log sistema di ascolto Birdsong Palude Torre Flavia.csv`: registro grezzo di tutti i messaggi di testo ricevuti (come prima).
 
 I doppioni (stesso canto ritrasmesso perché la conferma non era arrivata) vengono scartati.

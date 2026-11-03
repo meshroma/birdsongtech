@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Statistiche · birdsongtech</title>
+<meta name="description" content="Statistiche giornaliere della stazione di ascolto nella Palude di Torre Flavia: canti riconosciuti, temperatura, punto di rugiada, umidità, pressione e batteria.">
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/sito.css">
+<style>
+  /* colori dei grafici: verificati per contrasto e daltonismo sullo sfondo grafite */
+  :root{--serie-arancio:#d95926;--serie-blu:#3987e5;--griglia:rgba(255,255,255,.08);--asse:rgba(255,255,255,.22)}
+  .intro{padding:48px 0 22px}
+  .intro h1{font-size:clamp(32px,4.2vw,48px)}
+  .intro p{margin:10px 0 0}
+
+  .barra-mese{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;
+    background:rgba(37,43,47,.9);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 16px;margin-bottom:20px}
+  .mese{display:flex;align-items:center;gap:10px}
+  .mese h2{font-size:22px;margin:0;min-width:200px;text-align:center}
+  .freccia{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--testo);
+    font:600 18px/1 var(--sans);cursor:pointer;display:grid;place-items:center}
+  .freccia:hover:not(:disabled){border-color:var(--arancio)}
+  .freccia:disabled{opacity:.3;cursor:default}
+  .azioni-mese{display:flex;gap:10px;align-items:center}
+
+  .riepilogo{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
+  .tile{background:rgba(37,43,47,.75);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px 18px}
+  .tile .valore{font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+  .tile .valore small{font-size:16px;font-weight:500;color:var(--piuma);margin-left:3px}
+  .tile .cosa{font-size:13px;color:var(--piuma);margin-top:6px}
+
+  .grafici{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  .grafico{background:rgba(37,43,47,.75);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px 18px 10px;position:relative}
+  .grafico.largo{grid-column:1/-1}
+  .grafico h3{font-size:16px;margin:0}
+  .grafico .sotto{font-size:13px;color:var(--piuma);margin:3px 0 8px}
+  .legenda{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#cdd2d0;margin:0 0 6px}
+  .legenda span{display:inline-flex;align-items:center;gap:6px}
+  .legenda i{display:inline-block;width:14px;height:3px;border-radius:2px}
+  .legenda i.fascia{height:10px;opacity:.35}
+  .area{position:relative}
+  .area svg{display:block;width:100%;height:auto;overflow:visible}
+  .area svg text{font-family:var(--sans);font-size:11px;fill:var(--piuma)}
+  .vuoto{position:absolute;inset:0;display:grid;place-items:center;color:var(--piuma);font-size:14px;pointer-events:none}
+  .suggerimento{position:absolute;pointer-events:none;z-index:5;background:#11161a;border:1px solid var(--linea);border-radius:8px;
+    padding:8px 10px;font-size:13px;line-height:1.45;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.35);display:none}
+  .suggerimento b{display:block;font-weight:600;margin-bottom:2px}
+  .suggerimento .riga{display:flex;align-items:center;gap:6px;color:#dfe3e1}
+  .suggerimento .riga i{width:10px;height:3px;border-radius:2px;display:inline-block}
+
+  .tabella-stat{margin-top:20px;background:rgba(28,33,36,.86);border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow-x:auto}
+  .tabella-stat td,.tabella-stat th{text-align:right;font-variant-numeric:tabular-nums}
+  .tabella-stat td:first-child,.tabella-stat th:first-child{text-align:left}
+  .nota-dati{margin-top:16px}
+
+  @media (max-width:900px){ .grafici{grid-template-columns:1fr} .riepilogo{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:520px){ .mese h2{min-width:0;font-size:19px} .tile .valore{font-size:24px} }
+</style>
+</head>
+<body>
+
+<header class="testata">
+  <a class="marchio" href="index.html"><img src="assets/logo-simbolo.png" alt="" width="42" height="40"><span><b>birdsong</b><i>tech</i></span></a>
+  <nav class="menu" aria-label="Sezioni del sito">
+    <a href="index.html">Home</a>
+    <a href="archivio.html">Archivio dei canti</a>
+    <a href="player.html?demo=1">Visualizzatore 3D</a>
+    <a href="schema.html">Schema flussi e dati</a>
+    <a href="statistiche.html" aria-current="page">Statistiche</a>
+  </nav>
+</header>
+
+<main>
+  <div class="intro">
+    <h1>Statistiche</h1>
+    <p class="nota" id="aggiornamento"></p>
+  </div>
+
+  <div class="barra-mese">
+    <div class="mese">
+      <button class="freccia" id="prec" type="button" aria-label="Mese precedente">‹</button>
+      <h2 id="titolo-mese" aria-live="polite"></h2>
+      <button class="freccia" id="succ" type="button" aria-label="Mese successivo">›</button>
+    </div>
+    <div class="azioni-mese">
+      <button class="btn secondario piccolo" id="oggi" type="button">Mese corrente</button>
+      <button class="btn secondario piccolo" id="b-tabella" type="button" aria-expanded="false">Mostra i dati in tabella</button>
+    </div>
+  </div>
+
+  <section class="riepilogo" id="riepilogo" aria-label="Riepilogo del mese"></section>
+
+  <section class="grafici">
+    <article class="grafico largo" id="g-canti"></article>
+    <article class="grafico largo" id="g-temp"></article>
+    <article class="grafico" id="g-umid"></article>
+    <article class="grafico" id="g-press"></article>
+    <article class="grafico largo" id="g-batt"></article>
+  </section>
+
+  <div class="tabella-stat" id="tabella" hidden></div>
+  <p class="nota nota-dati">Valori giornalieri calcolati dalle misure della stazione: la telemetria arriva due volte al giorno e a ogni canto riconosciuto. Il punto di rugiada è calcolato da temperatura e umidità (formula di Magnus). La pagina si aggiorna da sola ogni 30 minuti.</p>
+</main>
+
+<footer class="piede">
+  <div class="dentro">
+    <p>birdsongtech — monitoraggio bioacustico del Monumento Naturale Palude di Torre Flavia. Area protetta gestita dalla <a href="https://www.cittametropolitanaroma.it/homepage/aree-tematiche/ambiente/aree-protette-tutela-della-flora-della-biodiversita/" target="_blank" rel="noopener">Città Metropolitana di Roma Capitale</a>.</p>
+    <p>Contatti: <a href="mailto:info@birdsongtech.it">info@birdsongtech.it</a></p>
+  </div>
+</footer>
+
+<script src="data/statistiche.js"></script>
+<script>
+(function(){
+  'use strict';
+  const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const C = { arancio: '#d95926', blu: '#3987e5' };
+  const $ = id => document.getElementById(id);
+  const fmt = (v, dec=1) => v == null ? '—' : v.toLocaleString('it-IT', {minimumFractionDigits: dec, maximumFractionDigits: dec});
+  let S = window.BIRDSONG_STAT || {giorni:{}};
+
+  /* mese mostrato: all'apertura quello corrente (ora italiana) */
+  const oggiISO = () => new Date().toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'});   // AAAA-MM-GG
+  let anno, mese, seguiCorrente = true;
+  function impostaCorrente(){ const o = oggiISO(); anno = +o.slice(0,4); mese = +o.slice(5,7); }
+  impostaCorrente();
+  const chiaveMese = (a, m) => `${a}-${String(m).padStart(2,'0')}`;
+  const mesiConDati = () => [...new Set(Object.keys(S.giorni).map(d => d.slice(0,7)))].sort();
+
+  function giorniDelMese(){
+    const n = new Date(anno, mese, 0).getDate();
+    const pref = chiaveMese(anno, mese);
+    return Array.from({length: n}, (_, i) => {
+      const d = `${pref}-${String(i+1).padStart(2,'0')}`;
+      return {giorno: i+1, data: d, v: S.giorni[d] || null};
+    });
+  }
+
+  /* ---------------------------------------------------------------- grafico SVG
+     cfg: {titolo, sotto, tipo:'barre'|'linee', serie:[{nome, colore, val:fn, min:fn, max:fn, unita, dec}], ymin, ymax, passo} */
+  function grafico(el, cfg){
+    const giorni = giorniDelMese();
+    const W = Math.max(320, el.clientWidth - 36), H = el.classList.contains('largo') ? 220 : 200;
+    const m = {l: 40, r: 14, t: 10, b: 26};
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const n = giorni.length, passoX = iw / n;
+    const x = i => m.l + passoX * (i + .5);
+
+    /* scala y: dai dati del mese, oppure fissa (0-100 per umidita' e batteria) */
+    let vals = [];
+    for (const s of cfg.serie) for (const g of giorni) if (g.v) for (const f of [s.val, s.min, s.max]) { if (f) { const v = f(g.v); if (v != null) vals.push(v); } }
+    const ciSonoDati = vals.length > 0;
+    let y0 = cfg.ymin, y1 = cfg.ymax;
+    if (y0 == null || y1 == null){
+      const lo = ciSonoDati ? Math.min(...vals) : 0, hi = ciSonoDati ? Math.max(...vals) : 10;
+      const pad = Math.max((hi - lo) * .15, cfg.passo || 1);
+      if (y0 == null) y0 = cfg.tipo === 'barre' ? 0 : Math.floor((lo - pad) / (cfg.passo || 1)) * (cfg.passo || 1);
+      if (y1 == null) y1 = Math.ceil((hi + pad) / (cfg.passo || 1)) * (cfg.passo || 1);
+      if (cfg.tipo === 'barre') y1 = Math.max(y1, 4);
+      if (y1 <= y0) y1 = y0 + (cfg.passo || 1);
+    }
+    const y = v => m.t + ih - (v - y0) / (y1 - y0) * ih;
+
+    /* tacche asse y: circa 4 righe di griglia */
+    const grezzo = (y1 - y0) / 4, mag = Math.pow(10, Math.floor(Math.log10(grezzo)));
+    let passoY = [1,2,2.5,5,10].map(k => k*mag).find(k => k >= grezzo) || grezzo;
+    if (cfg.tipo === 'barre') passoY = Math.max(1, Math.round(passoY));   // conteggi: solo numeri interi
+    let svg = '';
+    for (let v = Math.ceil(y0 / passoY) * passoY; v <= y1 + 1e-9; v += passoY){
+      svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--griglia)"/>`;
+      svg += `<text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(v, passoY < 1 ? 1 : 0)}</text>`;
+    }
+    /* asse x: un'etichetta ogni 5 giorni, piu' il primo */
+    for (const g of giorni) if (g.giorno === 1 || g.giorno % 5 === 0)
+      svg += `<text x="${x(g.giorno - 1)}" y="${H - 6}" text-anchor="middle">${g.giorno}</text>`;
+    svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(y0)}" y2="${y(y0)}" stroke="var(--asse)"/>`;
+
+    /* oggi: linea verticale tenue */
+    const iOggi = giorni.findIndex(g => g.data === oggiISO());
+    if (iOggi >= 0) svg += `<line x1="${x(iOggi)}" x2="${x(iOggi)}" y1="${m.t}" y2="${y(y0)}" stroke="rgba(255,255,255,.18)" stroke-dasharray="3 4"/><text x="${x(iOggi)}" y="${m.t + 10}" text-anchor="middle" style="font-size:10px">oggi</text>`;
+
+    if (cfg.tipo === 'barre'){
+      const s = cfg.serie[0], bw = Math.max(3, Math.min(22, passoX - 4));
+      giorni.forEach((g, i) => {
+        const v = g.v ? s.val(g.v) : null;
+        if (!v) return;
+        const top = y(v), base = y(y0), h = base - top, r = Math.min(4, bw / 2, h);
+        /* barra con angoli superiori arrotondati, appoggiata alla base */
+        svg += `<path d="M${x(i) - bw/2},${base} V${top + r} Q${x(i) - bw/2},${top} ${x(i) - bw/2 + r},${top} H${x(i) + bw/2 - r} Q${x(i) + bw/2},${top} ${x(i) + bw/2},${top + r} V${base} Z" fill="${s.colore}"/>`;
+      });
+    } else {
+      for (const s of cfg.serie){
+        /* fascia min-max, interrotta dove mancano dati */
+        if (s.min && s.max){
+          let tratto = [];
+          const chiudi = () => { if (tratto.length > 1){ const su = tratto.map(p => `${p[0]},${p[1]}`).join(' L'), giu = tratto.slice().reverse().map(p => `${p[0]},${p[2]}`).join(' L'); svg += `<path d="M${su} L${giu} Z" fill="${s.colore}" opacity=".18"/>`; } tratto = []; };
+          giorni.forEach((g, i) => { const a = g.v && s.min(g.v), b = g.v && s.max(g.v); if (a != null && b != null && g.v) tratto.push([x(i), y(b), y(a)]); else chiudi(); });
+          chiudi();
+        }
+        /* linea, interrotta dove mancano dati; punti singoli come marcatori */
+        let tratto = [];
+        const chiudi = () => {
+          if (tratto.length > 1) svg += `<path d="M${tratto.join(' L')}" fill="none" stroke="${s.colore}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+          else if (tratto.length === 1){ const [px, py] = tratto[0].split(','); svg += `<circle cx="${px}" cy="${py}" r="4" fill="${s.colore}" stroke="#252b2f" stroke-width="2"/>`; }
+          tratto = [];
+        };
+        giorni.forEach((g, i) => { const v = g.v ? s.val(g.v) : null; if (v != null) tratto.push(`${x(i)},${y(v)}`); else chiudi(); });
+        chiudi();
+      }
+    }
+    /* livello di interazione: una colonna invisibile per giorno */
+    svg += `<line class="mirino" x1="0" x2="0" y1="${m.t}" y2="${y(y0)}" stroke="rgba(255,255,255,.35)" visibility="hidden"/>`;
+    giorni.forEach((g, i) => { svg += `<rect data-i="${i}" x="${m.l + passoX * i}" y="${m.t}" width="${passoX}" height="${ih}" fill="transparent"/>`; });
+
+    const legenda = cfg.serie.length > 1 || cfg.serie.some(s => s.min)
+      ? `<div class="legenda">${cfg.serie.map(s => `<span><i style="background:${s.colore}"></i>${s.nome}</span>${s.min ? `<span><i class="fascia" style="background:${s.colore}"></i>${s.fascia || 'minima – massima'}</span>` : ''}`).join('')}</div>` : '';
+    el.innerHTML = `<h3>${cfg.titolo}</h3><p class="sotto">${cfg.sotto}</p>${legenda}
+      <div class="area"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.titolo}, ${MESI[mese-1]} ${anno}">${svg}</svg>
+      ${ciSonoDati ? '' : '<div class="vuoto">Nessun dato per questo mese</div>'}<div class="suggerimento"></div></div>`;
+
+    /* suggerimento al passaggio del mouse o al tocco */
+    const area = el.querySelector('.area'), tip = el.querySelector('.suggerimento'), mir = el.querySelector('.mirino');
+    const mostra = i => {
+      const g = giorni[i];
+      mir.setAttribute('x1', x(i)); mir.setAttribute('x2', x(i)); mir.setAttribute('visibility', 'visible');
+      const righe = g.v ? cfg.serie.map(s => {
+        const v = s.val(g.v); const extra = s.min && s.min(g.v) != null ? ` <span style="color:var(--piuma)">(${fmt(s.min(g.v), s.dec)}–${fmt(s.max(g.v), s.dec)})</span>` : '';
+        return `<div class="riga"><i style="background:${s.colore}"></i>${s.nome}: ${fmt(v, s.dec)}${v != null ? ' ' + s.unita : ''}${extra}</div>`;
+      }).join('') : '<div class="riga" style="color:var(--piuma)">nessun dato</div>';
+      tip.innerHTML = `<b>${g.giorno} ${MESI[mese-1]}</b>${righe}`;
+      tip.style.display = 'block';
+      const r = area.getBoundingClientRect(), px = x(i) / W * r.width;
+      const lato = px > r.width / 2 ? px - tip.offsetWidth - 12 : px + 12;
+      tip.style.left = Math.max(0, lato) + 'px'; tip.style.top = '6px';
+    };
+    const nascondi = () => { tip.style.display = 'none'; mir.setAttribute('visibility', 'hidden'); };
+    el.querySelectorAll('rect[data-i]').forEach(rc => {
+      rc.addEventListener('mouseenter', () => mostra(+rc.dataset.i));
+      rc.addEventListener('touchstart', () => mostra(+rc.dataset.i), {passive: true});
+    });
+    area.addEventListener('mouseleave', nascondi);
+  }
+
+  /* ---------------------------------------------------------------- pagina */
+  function disegna(){
+    const giorni = giorniDelMese(), conDati = giorni.filter(g => g.v);
+    $('titolo-mese').textContent = `${MESI[mese-1].replace(/^./, c => c.toUpperCase())} ${anno}`;
+    const elenco = mesiConDati(), corrente = chiaveMese(anno, mese), o = oggiISO().slice(0,7);
+    $('prec').disabled = !elenco.some(k => k < corrente);
+    $('succ').disabled = corrente >= o;
+    $('oggi').style.display = corrente === o ? 'none' : '';
+    $('aggiornamento').textContent = S.aggiornato
+      ? `Dati giornalieri della stazione di ascolto, aggiornati al ${S.aggiornato.slice(8,10)}/${S.aggiornato.slice(5,7)}/${S.aggiornato.slice(0,4)} alle ${S.aggiornato.slice(11,16)}.`
+      : 'Dati giornalieri della stazione di ascolto.';
+
+    /* riepilogo del mese */
+    const somma = conDati.reduce((a, g) => a + (g.v.canti || 0), 0);
+    const tm = conDati.map(g => g.v.t_med).filter(v => v != null);
+    const ultimo = [...conDati].reverse().find(g => g.v.b_ult != null);
+    const um = conDati.map(g => g.v.u_med).filter(v => v != null);
+    $('riepilogo').innerHTML = [
+      [somma.toLocaleString('it-IT'), '', `canti validi nel mese (affidabilità ≥ ${Math.round((S.soglia || .8) * 100)}%)`],
+      [tm.length ? fmt(tm.reduce((a,b)=>a+b,0) / tm.length) : '—', tm.length ? '°C' : '', 'temperatura media del mese'],
+      [um.length ? fmt(um.reduce((a,b)=>a+b,0) / um.length, 0) : '—', um.length ? '%' : '', 'umidità media del mese'],
+      [ultimo ? ultimo.v.b_ult : '—', ultimo ? '%' : '', ultimo ? `batteria, ultimo valore (${ultimo.giorno} ${MESI[mese-1]})` : 'batteria, ultimo valore'],
+    ].map(([v, u, c]) => `<div class="tile"><div class="valore">${v}<small>${u}</small></div><div class="cosa">${c}</div></div>`).join('');
+
+    grafico($('g-canti'), {titolo: 'Canti validi al giorno', sotto: `Canti riconosciuti con affidabilità di almeno il ${Math.round((S.soglia || .8) * 100)}%`, tipo: 'barre', passo: 1,
+      serie: [{nome: 'Canti validi', colore: C.arancio, val: v => v.canti, unita: '', dec: 0}]});
+    grafico($('g-temp'), {titolo: 'Temperatura e punto di rugiada', sotto: 'Gradi Celsius: media giornaliera, con la fascia tra minima e massima', tipo: 'linee', passo: 2,
+      serie: [{nome: 'Temperatura media', colore: C.arancio, val: v => v.t_med, min: v => v.t_min, max: v => v.t_max, unita: '°C', dec: 1, fascia: 'temperatura minima – massima'},
+              {nome: 'Punto di rugiada', colore: C.blu, val: v => v.r_med, unita: '°C', dec: 1}]});
+    grafico($('g-umid'), {titolo: 'Umidità relativa', sotto: 'Percentuale: media giornaliera, con la fascia tra minima e massima', tipo: 'linee', ymin: 0, ymax: 100,
+      serie: [{nome: 'Umidità media', colore: C.blu, val: v => v.u_med, min: v => v.u_min, max: v => v.u_max, unita: '%', dec: 0}]});
+    grafico($('g-press'), {titolo: 'Pressione atmosferica', sotto: 'Ettopascal: media giornaliera', tipo: 'linee', passo: 2,
+      serie: [{nome: 'Pressione media', colore: C.blu, val: v => v.p_med, unita: 'hPa', dec: 1}]});
+    grafico($('g-batt'), {titolo: 'Stato della batteria', sotto: 'Percentuale di carica: ultimo valore del giorno, con la fascia tra minima e massima', tipo: 'linee', ymin: 0, ymax: 100,
+      serie: [{nome: 'Batteria', colore: C.blu, val: v => v.b_ult, min: v => v.b_min, max: v => v.b_max, unita: '%', dec: 0}]});
+
+    /* tabella dei dati (alternativa accessibile ai grafici) */
+    $('tabella').innerHTML = `<table class="tabella"><thead><tr><th>Giorno</th><th>Canti validi</th><th>T min</th><th>T media</th><th>T max</th><th>Rugiada</th><th>Umidità</th><th>Pressione</th><th>Batteria</th></tr></thead><tbody>${
+      conDati.length ? conDati.map(g => `<tr><td>${g.giorno} ${MESI[mese-1]}</td><td>${g.v.canti}</td><td>${fmt(g.v.t_min)}</td><td>${fmt(g.v.t_med)}</td><td>${fmt(g.v.t_max)}</td><td>${fmt(g.v.r_med)}</td><td>${fmt(g.v.u_med,0)}${g.v.u_med != null ? '%' : ''}</td><td>${fmt(g.v.p_med)}</td><td>${g.v.b_ult ?? '—'}${g.v.b_ult != null ? '%' : ''}</td></tr>`).join('')
+      : '<tr><td colspan="9" style="text-align:left;color:var(--piuma)">Nessun dato per questo mese.</td></tr>'}</tbody></table>`;
+  }
+
+  function sposta(delta){
+    mese += delta; if (mese < 1){ mese = 12; anno--; } if (mese > 12){ mese = 1; anno++; }
+    seguiCorrente = chiaveMese(anno, mese) === oggiISO().slice(0,7);
+    disegna();
+  }
+  $('prec').addEventListener('click', () => sposta(-1));
+  $('succ').addEventListener('click', () => sposta(1));
+  $('oggi').addEventListener('click', () => { impostaCorrente(); seguiCorrente = true; disegna(); });
+  $('b-tabella').addEventListener('click', e => {
+    const t = $('tabella'); t.hidden = !t.hidden;
+    e.currentTarget.setAttribute('aria-expanded', String(!t.hidden));
+    e.currentTarget.textContent = t.hidden ? 'Mostra i dati in tabella' : 'Nascondi la tabella';
+  });
+  let attesa; addEventListener('resize', () => { clearTimeout(attesa); attesa = setTimeout(disegna, 150); });
+
+  /* auto-aggiornamento: ricarica i dati ogni 30 minuti; se si guarda il mese corrente, segue il cambio di mese */
+  setInterval(() => {
+    const sc = document.createElement('script');
+    sc.src = 'data/statistiche.js?t=' + Date.now();
+    sc.onload = () => { S = window.BIRDSONG_STAT || S; if (seguiCorrente) impostaCorrente(); disegna(); sc.remove(); };
+    document.body.appendChild(sc);
+  }, 30 * 60 * 1000);
+
+  disegna();
+})();
+</script>
+</body>
+</html>

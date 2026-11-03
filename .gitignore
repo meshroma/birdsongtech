@@ -189,3 +189,7 @@ assets/specie/anteprima.html
 
 # documenti per l ente gestore (non pubblicati su GitHub)
 presentazione/
+
+# file da cancellare a mano
+_da_eliminare/
+*.db-journal

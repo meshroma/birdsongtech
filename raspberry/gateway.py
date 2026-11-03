@@ -4,6 +4,7 @@ birdsongtech - gateway LoRa della stazione base (Raspberry Pi 3 + Heltec V3 su U
 
 Riceve dalla stazione in campo i messaggi del protocollo BS1 (vedi docs/PROTOCOLLO_LORA.md):
   - "BS1 H ..."  risveglio della stazione  -> risponde con l'ora esatta ("BS1 T ...")
+                  e registra la telemetria (batteria, temperatura, pressione, umidita') in telemetria.csv
   - "BS1 D ..."  rilevamenti               -> li scrive in birdsong_log.csv e conferma ("BS1 A ...")
 Tutti i messaggi di testo, anche quelli non BS1, finiscono nel log grezzo letto dal display LCD.
 
@@ -22,13 +23,48 @@ PORTA = "/dev/ttyUSB0"                      # porta USB della Heltec V3 (None = 
 CANALE = 0                                  # indice del canale birdsongtech (primario)
 LOG_RILEVAMENTI = os.path.join(CARTELLA, "birdsong_log.csv")   # quello che scarica aggiorna_birdsong.bat
 LOG_GREZZO = os.path.join(CARTELLA, "log sistema di ascolto Birdsong Palude Torre Flavia.csv")
+LOG_TELEMETRIA = os.path.join(CARTELLA, "telemetria.csv")                # anche questo lo scarica aggiorna_birdsong.bat
 TAB_SPECIE = os.path.join(CARTELLA, "specie.csv")
 TAB_STAZIONI = os.path.join(CARTELLA, "stazioni.csv")
 ATTESA_CONFERMA = 8                         # secondi: raccoglie piu' messaggi D in un'unica conferma
 MITTENTI_AUTORIZZATI = []                   # es. ["!a1b2c3d4"]; vuoto = tutti quelli del canale privato
 
 COLONNE = ["timestamp", "nodo", "specie_ita", "specie_sci", "score_tinyml", "batteria_perc",
-           "temperatura", "pressione", "gps_lat", "gps_lon", "altitudine_mslm", "file_audio"]
+           "temperatura", "pressione", "umidita", "gps_lat", "gps_lon", "altitudine_mslm", "file_audio"]
+COLONNE_TELEMETRIA = ["timestamp", "nodo", "batteria_perc", "batteria_mv", "temperatura", "pressione", "umidita"]
+
+
+def dieci(v):
+    """'124' -> '12.4' (valori trasmessi moltiplicati per 10); vuoto se manca."""
+    v = (v or "").strip()
+    return f"{int(v) / 10:.1f}" if v.lstrip("-").isdigit() else ""
+
+
+def intero(v):
+    v = (v or "").strip()
+    return v if v.lstrip("-").isdigit() else ""
+
+
+def scrivi_csv(percorso, colonne, righe):
+    """Aggiunge righe a un CSV; se il file ha un'intestazione vecchia (colonne in meno) lo riscrive."""
+    esistenti, intestazione = [], None
+    if os.path.exists(percorso):
+        with open(percorso, newline="", encoding="utf-8") as f:
+            lettore = csv.DictReader(f)
+            intestazione = lettore.fieldnames
+            if intestazione != colonne:
+                esistenti = list(lettore)
+    if intestazione is not None and intestazione != colonne:
+        with open(percorso, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=colonne, extrasaction="ignore")
+            w.writeheader()
+            w.writerows(esistenti)
+        intestazione = colonne
+    with open(percorso, "a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=colonne, extrasaction="ignore")
+        if intestazione is None:
+            w.writeheader()
+        w.writerows(righe)
 
 
 def registra(msg):
@@ -89,11 +125,18 @@ class Ricevitore:
         return True
 
     def _ciao(self, parti):
-        # BS1 H <stazione> <batteria%> <mV> <in_coda>
+        # BS1 H <stazione> <batteria%> <mV> <in_coda> [<temperatura×10> <pressione×10> <umidita%>]
         sigla = parti[2].upper()
-        dettagli = " ".join(parti[3:])
-        registra(f"Risveglio di {sigla} ({dettagli})")
+        campi = (" ".join(parti[3:]).split() + [""] * 6)[:6]
+        bat, mv, coda, t10, p10, umid = campi
+        registra(f"Risveglio di {sigla}: batteria {bat}% ({mv} mV), in coda {coda or 0}")
         self.invia(f"BS1 T {sigla} {int(time.time())}")
+        stazione = self.stazioni.get(sigla, {})
+        scrivi_csv(LOG_TELEMETRIA, COLONNE_TELEMETRIA, [{
+            "timestamp": f"{datetime.now():%Y-%m-%d %H:%M:%S}", "nodo": stazione.get("nodo") or sigla,
+            "batteria_perc": intero(bat), "batteria_mv": intero(mv),
+            "temperatura": dieci(t10), "pressione": dieci(p10), "umidita": intero(umid),
+        }])
 
     def _dati(self, parti):
         # BS1 D <stazione> <seq> <batteria%> <rec>;<rec>;...
@@ -104,8 +147,8 @@ class Ricevitore:
         stazione = self.stazioni.get(sigla, {})
         nuovi = []
         for rec in filter(None, record.split(";")):
-            campi = (rec.split(",") + [""] * 5)[:5]
-            ts_compatto, codice, conf, temp10, pres10 = [c.strip() for c in campi]
+            campi = (rec.split(",") + [""] * 6)[:6]
+            ts_compatto, codice, conf, temp10, pres10, umid = [c.strip() for c in campi]
             dt = datetime.strptime(ts_compatto, "%Y%m%d%H%M%S")
             sp = self.specie.get(codice.upper())
             if sp is None:
@@ -117,8 +160,9 @@ class Ricevitore:
                 "specie_sci": sp["nome_sci"] if sp else "",
                 "score_tinyml": f"{int(conf) / 100:.2f}" if conf else "",
                 "batteria_perc": "" if batteria is None else batteria,
-                "temperatura": f"{int(temp10) / 10:.1f}" if temp10 else "",
-                "pressione": f"{int(pres10) / 10:.1f}" if pres10 else "",
+                "temperatura": dieci(temp10),
+                "pressione": dieci(pres10),
+                "umidita": intero(umid),
                 "gps_lat": stazione.get("lat", ""),
                 "gps_lon": stazione.get("lon", ""),
                 "altitudine_mslm": stazione.get("quota", ""),
@@ -143,12 +187,7 @@ class Ricevitore:
             self.timer.start()
 
     def _scrivi(self, righe):
-        nuovo_file = not os.path.exists(LOG_RILEVAMENTI)
-        with open(LOG_RILEVAMENTI, "a", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, fieldnames=COLONNE)
-            if nuovo_file:
-                w.writeheader()
-            w.writerows(righe)
+        scrivi_csv(LOG_RILEVAMENTI, COLONNE, righe)
 
     # ---- uscita
     def conferma(self):

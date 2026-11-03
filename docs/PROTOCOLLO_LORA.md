@@ -46,23 +46,25 @@ Testo ASCII, campi separati da spazi, **massimo 200 caratteri per messaggio**. O
 
 ### Dal campo alla base
 
-**H, risveglio.** Va inviato come primo messaggio a ogni risveglio della V4.
+**H, risveglio.** Va inviato come primo messaggio a ogni risveglio della V4. Porta anche la telemetria della scheda ambientale (temperatura, pressione, umidità): così le statistiche hanno almeno due misure al giorno anche nei giorni senza canti.
 ```
-BS1 H <stazione> <batteria%> <batteria_mV> <rilevamenti_in_coda>
-BS1 H TF01 87 3990 12
+BS1 H <stazione> <batteria%> <batteria_mV> <rilevamenti_in_coda> <temperatura×10> <pressione×10> <umidità%>
+BS1 H TF01 87 3990 12 124 10154 78
 ```
+Gli ultimi tre campi sono facoltativi: un messaggio `H` senza sensori resta valido.
 
 **D, rilevamenti.** Più rilevamenti per messaggio, separati da `;`.
 ```
 BS1 D <stazione> <seq> <batteria%> <rec>;<rec>;...
-rec = <AAAAMMGGhhmmss>,<CODICE_SPECIE>,<confidenza%>,<temperatura×10>,<pressione×10>
+rec = <AAAAMMGGhhmmss>,<CODICE_SPECIE>,<confidenza%>,<temperatura×10>,<pressione×10>,<umidità%>
 
-BS1 D TF01 41 87 20261102064512,ERIRUB,91,124,10154;20261102065003,CETCET,88,125,10154
+BS1 D TF01 41 87 20261102064512,ERIRUB,91,124,10154,78;20261102065003,CETCET,88,125,10154,79
 ```
 - `seq` è il numero del messaggio, crescente da 1 a 65535 e poi di nuovo da 1. Ogni rilevamento in coda tiene il `seq` del messaggio in cui è stato spedito.
 - `CODICE_SPECIE` è un codice di 6 lettere preso da `raspberry/specie.csv`. Le etichette del modello AI vanno mappate su questi codici.
-- Temperatura e pressione si moltiplicano per 10 e si scrivono come interi (`12.4 °C` → `124`, `1015.4 hPa` → `10154`). Se manca il sensore, lascia il campo vuoto: `...,91,,`.
-- Ogni rilevamento occupa circa 37 caratteri, quindi ci stanno circa 4 rilevamenti per messaggio.
+- Temperatura e pressione si moltiplicano per 10 e si scrivono come interi (`12.4 °C` → `124`, `1015.4 hPa` → `10154`). L'umidità relativa è un intero in percentuale (`78`). Se manca un sensore, lascia il campo vuoto: `...,91,,,`.
+- Il punto di rugiada non si trasmette: lo calcola `pubblica.py` da temperatura e umidità.
+- Ogni rilevamento occupa circa 40 caratteri, quindi ci stanno circa 4 rilevamenti per messaggio.
 
 ### Dalla base al campo
 

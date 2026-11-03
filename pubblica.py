@@ -33,6 +33,7 @@ from datetime import datetime
 CARTELLA = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(CARTELLA, "birdsong_history.db")
 CSV_LOG = os.path.join(CARTELLA, "birdsong_log.csv")
+CSV_TELEMETRIA = os.path.join(CARTELLA, "telemetria.csv")      # telemetria dei risvegli, dal Raspberry
 CARTELLA_IMPORT = os.path.join(CARTELLA, "da_importare")       # qui copi i .wav scaricati dalla XIAO
 CARTELLA_IMPORTATI = os.path.join(CARTELLA_IMPORT, "_importati")  # i .wav gia' pubblicati finiscono qui
 CARTELLA_AUDIO = os.path.join(CARTELLA, "audio")                # audio pubblicati sul sito
@@ -53,6 +54,7 @@ STAZIONE_DEFAULT = {"lat": 41.95970, "lon": 12.05215}
 
 FORMATO_TS = "%Y-%m-%d %H:%M:%S"
 DURATA_MAX = 16  # secondi: durata massima dei .wav registrati dalla XIAO
+SOGLIA_VALIDI = 0.80  # statistiche: un canto e' "valido" da questa affidabilita' in su
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -82,6 +84,7 @@ def apri_database():
     nuove = {
         "file_audio": "TEXT",    # nome del .wav sulla XIAO (facoltativo nel CSV)
         "audio_locale": "TEXT",  # percorso nell'archivio locale audio/AAAA/MM/...
+        "umidita": "REAL",       # umidita' relativa % (scheda ambientale)
     }
     for nome, tipo in nuove.items():
         if nome not in colonne:
@@ -91,6 +94,17 @@ def apri_database():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON rilevamenti_bioacustici(timestamp)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_nodo ON rilevamenti_bioacustici(nodo)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_specie ON rilevamenti_bioacustici(specie_ita)")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS telemetria (
+            timestamp TEXT NOT NULL,
+            nodo TEXT NOT NULL,
+            batteria_perc INTEGER,
+            batteria_mv INTEGER,
+            temperatura REAL,
+            pressione REAL,
+            umidita REAL,
+            UNIQUE(timestamp, nodo)
+        )""")
     conn.commit()
     return conn
 
@@ -135,16 +149,40 @@ def importa_log(conn):
             cur.execute("""
                 INSERT INTO rilevamenti_bioacustici
                 (timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, batteria_perc,
-                 temperatura, pressione, gps_lat, gps_lon, altitudine_mslm, file_audio)
-                VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)""",
+                 temperatura, pressione, umidita, gps_lat, gps_lon, altitudine_mslm, file_audio)
+                VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (ts, nodo, specie, row.get("specie_sci", ""), numero(row.get("score_tinyml")) or 0.0,
                  numero(row.get("batteria_perc"), int), numero(row.get("temperatura")),
-                 numero(row.get("pressione")), numero(row.get("gps_lat")), numero(row.get("gps_lon")),
-                 numero(row.get("altitudine_mslm")), row.get("file_audio") or None))
+                 numero(row.get("pressione")), numero(row.get("umidita")), numero(row.get("gps_lat")),
+                 numero(row.get("gps_lon")), numero(row.get("altitudine_mslm")), row.get("file_audio") or None))
             nuovi += 1
             print(f"    + {ts}  {nodo}  {specie}")
     conn.commit()
     print(f"[OK] Log: {nuovi} rilevamenti nuovi" + (f", {scartati} righe scartate" if scartati else ""))
+    return nuovi
+
+
+def importa_telemetria(conn):
+    """Telemetria dei risvegli (batteria, temperatura, pressione, umidita') da telemetria.csv."""
+    if not os.path.exists(CSV_TELEMETRIA):
+        return 0
+    cur = conn.cursor()
+    nuovi = 0
+    with open(CSV_TELEMETRIA, newline="", encoding="utf-8-sig") as f:
+        for row in csv.DictReader(f):
+            ts, nodo = (row.get("timestamp") or "").strip(), (row.get("nodo") or "").strip()
+            try:
+                datetime.strptime(ts, FORMATO_TS)
+            except ValueError:
+                continue
+            cur.execute("""INSERT OR IGNORE INTO telemetria
+                (timestamp, nodo, batteria_perc, batteria_mv, temperatura, pressione, umidita)
+                VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (ts, nodo, numero(row.get("batteria_perc"), int), numero(row.get("batteria_mv"), int),
+                 numero(row.get("temperatura")), numero(row.get("pressione")), numero(row.get("umidita"))))
+            nuovi += cur.rowcount
+    conn.commit()
+    print(f"[OK] Telemetria: {nuovi} misure nuove")
     return nuovi
 
 
@@ -346,6 +384,59 @@ def schede_specie():
     return schede
 
 
+# ---------------------------------------------------------------- statistiche giornaliere
+def punto_rugiada(t, u):
+    """Punto di rugiada in °C (formula di Magnus) da temperatura °C e umidita' relativa %."""
+    import math
+    if t is None or not u or u <= 0:
+        return None
+    a, b = 17.62, 243.12
+    g = math.log(min(u, 100) / 100) + a * t / (b + t)
+    return b * g / (a - g)
+
+
+def esporta_statistiche(conn):
+    """data/statistiche.js: per ogni giorno canti validi, meteo, punto di rugiada e batteria."""
+    giorni = {}
+
+    def giorno(d):
+        return giorni.setdefault(d, {"canti": 0, "t": [], "u": [], "p": [], "r": [], "b": []})
+
+    cur = conn.cursor()
+    misure = list(cur.execute("SELECT timestamp, batteria_perc, temperatura, pressione, umidita FROM telemetria"))
+    misure += list(cur.execute("""SELECT timestamp, batteria_perc, temperatura, pressione, umidita
+                                  FROM rilevamenti_bioacustici"""))
+    for ts, bat, t, p, u in misure:
+        g = giorno(ts[:10])
+        if t is not None: g["t"].append(t)
+        if u is not None: g["u"].append(u)
+        if p is not None: g["p"].append(p)
+        if bat is not None: g["b"].append((ts, bat))
+        r = punto_rugiada(t, u)
+        if r is not None: g["r"].append(r)
+    for ts, score in cur.execute("SELECT timestamp, score_tinyml FROM rilevamenti_bioacustici"):
+        if (score or 0) >= SOGLIA_VALIDI - 1e-9:
+            giorno(ts[:10])["canti"] += 1
+
+    media = lambda v: round(sum(v) / len(v), 1) if v else None
+    uscita = {}
+    for d, g in sorted(giorni.items()):
+        b = [x[1] for x in sorted(g["b"])]
+        uscita[d] = {
+            "canti": g["canti"],
+            "t_min": min(g["t"]) if g["t"] else None, "t_med": media(g["t"]), "t_max": max(g["t"]) if g["t"] else None,
+            "u_min": min(g["u"]) if g["u"] else None, "u_med": media(g["u"]), "u_max": max(g["u"]) if g["u"] else None,
+            "p_med": media(g["p"]),
+            "r_med": media(g["r"]),
+            "b_min": min(b) if b else None, "b_max": max(b) if b else None, "b_ult": b[-1] if b else None,
+        }
+    pacchetto = {"aggiornato": datetime.now().strftime(FORMATO_TS), "soglia": SOGLIA_VALIDI, "giorni": uscita}
+    testo = json.dumps(pacchetto, ensure_ascii=False, separators=(",", ":"))
+    with open(os.path.join(CARTELLA_DATI, "statistiche.js"), "w", encoding="utf-8") as f:
+        f.write("window.BIRDSONG_STAT = " + testo + ";\n")
+    print(f"[OK] Statistiche: {len(uscita)} giorni")
+
+
 # ---------------------------------------------------------------- export per il sito
 def esporta_dati(conn):
     cur = conn.cursor()
@@ -402,8 +493,10 @@ if __name__ == "__main__":
     conn = apri_database()
     try:
         importa_log(conn)
+        importa_telemetria(conn)
         importa_audio(conn)
         carica_su_archive(conn)
         esporta_dati(conn)
+        esporta_statistiche(conn)
     finally:
         conn.close()
