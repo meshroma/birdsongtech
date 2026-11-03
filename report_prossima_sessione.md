@@ -55,4 +55,5 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
    - su GitHub: Settings → Pages → Custom domain `www.birdsongtech.it`, poi Enforce HTTPS;
    - sul PC: Pull da GitHub Desktop prima del successivo `aggiorna_birdsong.bat`.
    Con il reindirizzamento nascosto l'indirizzo resta sempre la home, quindi i link non si possono condividere; il sito potrebbe vedersi rimpicciolito su telefono.
-6. Chiedere a venomez-viper il permesso per il visualizzatore 3D: il progetto originale non ha una licenza dichiarata.
+6. Google Analytics: il codice è solo sulla Home. Chiedere all'ente se servono il banner per il consenso ai cookie e la pagina dell'informativa privacy; in quel caso Analytics va attivato solo dopo il consenso.
+7. Chiedere a venomez-viper il permesso per il visualizzatore 3D: il progetto originale non ha una licenza dichiarata.
