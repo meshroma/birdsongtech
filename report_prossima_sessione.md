@@ -37,6 +37,7 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
   - ottobre-febbraio: spenta dalle 23 alle 5;
   - marzo e luglio-settembre: spenta dalle 23 fino a 90 minuti prima dell'alba;
   - aprile-giugno: sempre accesa.
+- Scarico dei file e aggiornamenti firmware **da terra**: il Bluetooth accende su richiesta il Wi-Fi della XIAO per 20 minuti (scatola in cima al palo, da tirare giù solo per emergenze). Collegamenti in `docs/schema_collegamenti.png`.
 - **Fase di test: V4 sempre accesa**, che fa anche da caricatore. Alimentazione: pannello 18 V 10 W con riduttore a 5 V, 2 × EVE 18650 in parallelo.
 
 ## Da fare
@@ -47,7 +48,7 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
 3. **Quando arriva la XIAO:**
    - prova della seriale TEXTMSG tra V4 e PC (sezione 1 di `docs/PROTOCOLLO_LORA.md`);
    - prova dal telefono dei messaggi `BS1 H` e `BS1 D`, poi cancellare il rilevamento di prova sul Pi;
-   - firmware della XIAO: ascolto, riconoscimento, coda, protocollo BS1, orari, nomi dei file;
+   - firmware della XIAO: ascolto, riconoscimento, coda, protocollo BS1, orari, nomi dei file, scarico via Wi-Fi su richiesta e aggiornamento OTA;
    - allineare `specie.csv` alle etichette del modello AI.
 4. Durante il test, misurare il consumo di V4 e XIAO e la corrente di carica. Poi decidere se tenere la V4 sempre accesa o usare un modulo MPPT separato.
 5. Dominio www.birdsongtech.it: **registrato**. Ora funziona con un reindirizzamento nascosto di Aruba. Da sostituire con il collegamento diretto a GitHub Pages:

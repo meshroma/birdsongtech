@@ -24,15 +24,15 @@ Il lato base è già implementato in `raspberry/gateway.py`.
 - Il canale `birdsongtech` deve essere il **primario**, perché in modalità TEXTMSG il modulo seriale trasmette sul canale predefinito.
 - Regione e preset devono coincidere con quelli dei nodi della rete che stanno tra le due stazioni, altrimenti i nodi intermedi non ripetono i pacchetti. Se cambi il canale primario, controlla anche che lo slot di frequenza (`lora.channel_num`) resti quello della rete locale.
 
-Comandi per la V4, da PC con la scheda via USB. I pin `rxd` e `txd` sono quelli della V4 collegati alla XIAO; scegli due GPIO liberi dal pinout della V4:
+Comandi per la V4, da PC con la scheda via USB. I pin `rxd` e `txd` sono quelli della V4 collegati alla XIAO: GPIO47 (RX, connettore J2 pin 13) e GPIO48 (TX, J2 pin 14), liberi secondo il datasheet Heltec V4.3.1. Schema completo in `docs/schema_collegamenti.png`.
 
 ```
 meshtastic --set device.role CLIENT_MUTE
 meshtastic --set serial.enabled true --set serial.mode TEXTMSG --set serial.echo false ^
-           --set serial.baud BAUD_38400 --set serial.rxd <GPIO_RX_V4> --set serial.txd <GPIO_TX_V4>
+           --set serial.baud BAUD_38400 --set serial.rxd 47 --set serial.txd 48
 ```
 
-Collegamenti: TX XIAO → RX V4, RX XIAO ← TX V4, GND in comune. Entrambe le schede lavorano a 3,3 V.
+Collegamenti: XIAO D6 (TX, GPIO43) → V4 GPIO47 (RX); XIAO D7 (RX, GPIO44) ← V4 GPIO48 (TX); GND in comune. Entrambe le schede lavorano a 3,3 V. La XIAO è alimentata dal pin 3V3 della V4 (J3 pin 2-3, max 500 mA).
 
 **Prova da fare subito, prima di scrivere il firmware.** Collega la V4 a un adattatore USB-seriale sul PC e apri un terminale a 38400 baud.
 1. Scrivi una riga, ad esempio `BS1 H TF01 90 4000 0`: il gateway sul Pi deve riceverla e rispondere.
