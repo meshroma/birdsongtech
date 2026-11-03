@@ -30,6 +30,7 @@ a{color:var(--arancio-chiaro)}
 #marchio img{height:38px;width:auto}
 #marchio span{font-size:18px;font-weight:600;letter-spacing:-.01em}
 #marchio b{font-weight:700}#marchio i{font-style:normal;font-weight:400}
+#marchio .in-prova{display:block;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#ffa25e;margin-top:1px;line-height:1.2}
 
 /* ---- scheda del rilevamento ---- */
 #scheda{position:fixed;top:72px;left:20px;width:310px;z-index:30;background:rgba(28,33,36,.88);border:1px solid rgba(255,255,255,.08);
@@ -108,7 +109,7 @@ a{color:var(--arancio-chiaro)}
 
 <canvas id="c" aria-label="Visualizzazione tridimensionale delle frequenze del canto"></canvas>
 
-<a id="marchio" href="index.html" title="Torna alla home"><img src="assets/logo-simbolo.png" alt="" width="40" height="38"><span><b>birdsong</b><i>tech</i></span></a>
+<a id="marchio" href="index.html" title="Torna alla home"><img src="assets/logo-simbolo.png" alt="" width="40" height="38"><span><b>birdsong</b><i>tech</i><small class="in-prova">sito in fase di test</small></span></a>
 
 <aside id="scheda" aria-live="polite">
   <div id="s-foto"></div>
@@ -119,7 +120,7 @@ a{color:var(--arancio-chiaro)}
   <div id="comandi">
     <div class="riga">
       <button class="btn primario" id="b-play" type="button" disabled>Ascolta</button>
-      <button class="btn" id="b-loop" type="button" aria-pressed="true" title="Ripeti il canto in continuo">Ripeti</button>
+      <button class="btn" id="b-loop" type="button" aria-pressed="false" title="Attiva o disattiva la ripetizione continua del canto">Ripeti</button>
     </div>
     <div class="riga">
       <input id="barra" type="range" min="0" max="1000" value="0" aria-label="Posizione nel canto" disabled>
