@@ -107,7 +107,25 @@ La coda vive nella flash della XIAO (es. LittleFS, file `coda.csv`), così sopra
 
 - Nome: `<stazione>_<AAAAMMGG>_<hhmmss>.wav`, per esempio `TF01_20261102_064512.wav`. Il timestamp deve essere **identico** a quello del rilevamento nel messaggio `D`: è così che `pubblica.py` associa l'audio al rilevamento.
 - Durata massima **16 s**. Formato consigliato: WAV PCM 16 bit mono, 16 kHz, circa 32 KB al secondo, cioè circa 0,5 MB per file.
-- In riserva si scaricano via Bluetooth o Wi-Fi, si copiano sul PC in `da_importare\` e poi si cancellano dalla XIAO.
+- I file restano sulla microSD (64 GB, oltre 100.000 file) e si scaricano dal basso, senza smontare la scatola: vedi sotto. Sul PC vanno in `da_importare\`.
+
+### Scarico dal basso (Wi-Fi su richiesta)
+
+La scatola sta in cima al palo e si tira giù solo per emergenze, quindi tutto si fa da terra col telefono.
+
+1. **Di base** il Wi-Fi della XIAO è spento. Resta attivo solo il Bluetooth Low Energy in ascolto, con il nome `TF01-XIAO` e il consumo minimo.
+2. **Attivazione:** dal telefono, via BLE, si manda il comando `WIFI ON`, protetto da un codice. In alternativa, più avanti, si può aggiungere il messaggio `BS1 W TF01` dalla base via LoRa.
+3. La XIAO **sospende l'ascolto** e accende un punto di accesso Wi-Fi (`birdsongtech-TF01`, con password) per **20 minuti**.
+4. Col browser del telefono o del portatile si apre `http://192.168.4.1`, dove si trovano:
+   - l'elenco dei file con dimensione e stato;
+   - lo scarico del singolo file o di tutti quelli nuovi;
+   - lo stato della batteria e lo spazio libero.
+5. **Cancellazione:** i file si cancellano dalla microSD solo con un comando esplicito, dopo averli copiati sul PC. Di base si tengono: lo spazio basta per anni.
+6. A fine scarico, o allo scadere dei 20 minuti, il Wi-Fi si spegne e l'ascolto riprende.
+
+Velocità indicative: Bluetooth 30-80 KB/s, circa 10-15 s per file; Wi-Fi 1-2 MB/s, meno di 1 s per file. Il Bluetooth serve solo come "interruttore".
+
+Dalla stessa pagina si può caricare un **nuovo firmware (OTA)**, così anche gli aggiornamenti non richiedono di smontare la scatola. Conviene tenere sempre un firmware di riserva funzionante: lo schema di partizioni con due slot OTA dell'ESP32 lo fa in automatico.
 
 ## 6. Orari di ascolto
 
