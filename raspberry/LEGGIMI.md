@@ -5,7 +5,7 @@ Raspberry Pi 3 (Debian 13), con la Heltec V3 collegata via USB (`/dev/ttyUSB0`) 
 | File | A cosa serve |
 |---|---|
 | `gateway.py` | Riceve i messaggi `BS1` dalla stazione in campo, risponde con conferma e ora esatta, scrive `birdsong_log.csv` |
-| `display_last.py` | Script originale del display, **invariato**: mostra l'ultimo messaggio ricevuto (data, ora, nodo, testo), per capire al volo se la radio riceve |
+| `display_last.py` | Testo del display LCD: ultima ricezione, nodo, file validi (80% o più) dell'ultima ricezione, batteria della stazione. Driver e servizio del display invariati; la versione precedente è in `originali/` |
 | `specie.csv` | Tabella codice → nome italiano → nome scientifico (i codici li usa la XIAO) |
 | `stazioni.csv` | Sigla della stazione (es. `TF01`) → nome del nodo, coordinate, quota |
 | `birdsong.service`, `birdsong-display.service` | I servizi systemd che fanno partire i due script all'accensione (invariati, **da non toccare**) |
@@ -22,7 +22,14 @@ cd "C:\Users\iz0qp\Desktop\birdsong\birdsong AI\birdsong-backend\raspberry"
 scp gateway.py specie.csv stazioni.csv pi@192.168.1.100:/home/pi/
 ssh pi@192.168.1.100 "sudo systemctl restart birdsong"
 
-Si aggiorna **solo il gateway**: display, driver LCD, `.bash_profile` e servizi restano come sono.
+Si aggiornano **solo gli script**: driver LCD, `.bash_profile` e servizi restano come sono.
+
+Per aggiornare anche il testo del display:
+
+```
+scp display_last.py pi@192.168.1.100:/home/pi/
+ssh -t pi@192.168.1.100 "sudo systemctl restart birdsong-display"
+```
 Il nuovo gateway scrive il registro grezzo nello stesso formato di prima, quindi il display continua a funzionare.
 ```
 
