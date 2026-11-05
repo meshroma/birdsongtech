@@ -57,6 +57,14 @@ CARTELLA_VERIFICHE = os.path.join(CARTELLA, "verifiche")   # qui salvi i file re
 CARTELLA_LOTTI = os.path.join(CARTELLA, "lotti")           # qui pubblica.py --lotto crea i file da spedire
 SITO = "https://meshroma.github.io/birdsongtech/"          # indirizzo diretto del sito (link nei lotti)
 
+# ---- copia di sicurezza sulla scheda SD del Raspberry (supporto fisico diverso dal PC)
+BACKUP_PI = True                               # False = nessuna copia
+BACKUP_PI_HOST = "pi@192.168.1.100"
+BACKUP_PI_CARTELLA = "/home/pi/birdsongtech_backup"
+# cosa copiare: audio (solo i file nuovi) + database, CSV, documenti, presentazione, verifiche
+BACKUP_CARTELLE = ["audio", "docs", "presentazione", "verifiche", "lotti"]
+BACKUP_FILE = ["birdsong_history.db", "birdsong_log.csv", "telemetria.csv"]
+
 FORMATO_TS = "%Y-%m-%d %H:%M:%S"
 DURATA_MAX = 16  # secondi: durata massima dei .wav registrati dalla XIAO
 SOGLIA_VALIDI = 0.80  # statistiche: un canto e' "valido" da questa affidabilita' in su
@@ -813,6 +821,91 @@ def esporta_dati(conn):
           + ("  [MODO LOCALE: non fare il push di questi dati]" if MODO_LOCALE else ""))
 
 
+# ---------------------------------------------------------------- copia di sicurezza sul Raspberry
+def _ssh(argomenti, timeout=60):
+    import subprocess
+    opz = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=6"]   # niente richiesta di password: senza chiave SSH si salta
+    try:
+        r = subprocess.run(argomenti[:1] + opz + argomenti[1:], capture_output=True, text=True, timeout=timeout)
+        return r.returncode, r.stdout, r.stderr
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return 1, "", str(e)
+
+
+def backup_raspberry():
+    """Copia sulla scheda SD del Raspberry i file che esistono solo sul PC.
+    Gli audio si copiano una volta sola (solo quelli nuovi); database, CSV e documenti si riscrivono ogni volta.
+    Richiede l'accesso SSH con chiave (raspberry/LEGGIMI.md): senza, la copia viene saltata con un avviso."""
+    if not BACKUP_PI or MODO_LOCALE:
+        return 0
+    dest = BACKUP_PI_CARTELLA.rstrip("/")
+    codice, uscita, errore = _ssh(["ssh", BACKUP_PI_HOST,
+        f"mkdir -p {dest} && cd {dest} && find . -type f -printf '%P\\t%s\\t%T@\\n'; echo ---; df -k {dest} | tail -1"])
+    if codice != 0:
+        print("[!] Copia sul Raspberry saltata: Pi non raggiungibile o accesso SSH senza chiave "
+              "(vedi raspberry/LEGGIMI.md, 'Scaricare il log senza password').")
+        return 0
+    elenco, _, spazio = uscita.partition("---")
+    remoti = {}
+    for riga in elenco.strip().splitlines():
+        campi = riga.split("\t")
+        if len(campi) >= 3:
+            try:
+                remoti[campi[0]] = (int(campi[1]), float(campi[2]))
+            except ValueError:
+                pass
+
+    da_copiare = []      # (percorso locale, percorso relativo con /)
+    for c in BACKUP_CARTELLE:
+        radice = os.path.join(CARTELLA, c)
+        for su, _, files in os.walk(radice):
+            for f in files:
+                if f.startswith("~$"):
+                    continue
+                p = os.path.join(su, f)
+                rel = os.path.relpath(p, CARTELLA).replace(os.sep, "/")
+                r = remoti.get(rel)
+                if r and r[0] == os.path.getsize(p) and (c == "audio" or abs(r[1] - os.path.getmtime(p)) < 2):
+                    continue                                 # gia' presente e invariato (gli audio non cambiano mai)
+                da_copiare.append((p, rel))
+    for f in BACKUP_FILE:
+        p = os.path.join(CARTELLA, f)
+        if os.path.exists(p):
+            da_copiare.append((p, f))
+    if not da_copiare:
+        print("[OK] Copia sul Raspberry: niente di nuovo")
+        return 0
+
+    # crea le cartelle remote e copia a gruppi (un scp per cartella, al massimo 40 file per volta)
+    cartelle = sorted({os.path.dirname(rel) for _, rel in da_copiare if os.path.dirname(rel)})
+    if cartelle:
+        _ssh(["ssh", BACKUP_PI_HOST, "mkdir -p " + " ".join(f"'{dest}/{c}'" for c in cartelle)])
+    gruppi = {}
+    for p, rel in da_copiare:
+        gruppi.setdefault(os.path.dirname(rel), []).append(p)
+    copiati = falliti = 0
+    for cart, files in gruppi.items():
+        for i in range(0, len(files), 40):
+            pezzo = files[i:i + 40]
+            destinazione = f"{BACKUP_PI_HOST}:{dest}/{cart}/" if cart else f"{BACKUP_PI_HOST}:{dest}/"
+            codice, _, errore = _ssh(["scp", "-q", "-p"] + pezzo + [destinazione], timeout=600)
+            if codice == 0:
+                copiati += len(pezzo)
+            else:
+                falliti += len(pezzo)
+                print(f"    [!] copia non riuscita in {cart or '/'}: {errore.strip()[:120]}")
+    libero = ""
+    campi = spazio.split()
+    if len(campi) >= 4 and campi[3].isdigit():
+        gb = int(campi[3]) / 1048576
+        libero = f", spazio libero sulla SD {gb:.1f} GB"
+        if gb < 2:
+            libero += "  [!] POCO SPAZIO: valuta una scheda piu' grande o un disco USB"
+    print(f"[OK] Copia sul Raspberry: {copiati} file copiati in {BACKUP_PI_HOST}:{dest}"
+          + (f", {falliti} non riusciti (riprovo al prossimo avvio)" if falliti else "") + libero)
+    return copiati
+
+
 if __name__ == "__main__":
     conn = apri_database()
     if "--lotto" in sys.argv:          # python pubblica.py --lotto 40   -> crea un file da spedire a un revisore
@@ -834,3 +927,4 @@ if __name__ == "__main__":
         esporta_statistiche(conn)
     finally:
         conn.close()
+    backup_raspberry()

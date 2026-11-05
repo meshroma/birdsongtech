@@ -61,7 +61,7 @@ ssh-keygen -t ed25519
 type %USERPROFILE%\.ssh\id_ed25519.pub | ssh pi@192.168.1.100 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
 ```
 
-Da quel momento `ssh` e `scp` verso il Pi non chiedono più la password.
+Da quel momento `ssh` e `scp` verso il Pi non chiedono più la password. Serve anche alla **copia di sicurezza** che `pubblica.py` fa a ogni aggiornamento nella cartella `/home/pi/birdsongtech_backup/` (vedi `docs/ISTRUZIONI.md`, "Copie di sicurezza"). La cartella non interferisce con il gateway e il display.
 
 ## Ora esatta
 

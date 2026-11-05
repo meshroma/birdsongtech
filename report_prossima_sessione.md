@@ -49,6 +49,7 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
 
 **A ogni sessione:** aggiornare insieme sito, `docs` (con `docs/ORE_DI_LAVORO.md` e le immagini in `docs/sorgenti/`) e la presentazione in `presentazione/`.
 
+0. **Chiave SSH dal PC al Raspberry** (raspberry/LEGGIMI.md): serve per la copia di sicurezza automatica degli audio sulla SD del Pi e toglie le richieste di password.
 0. Creare su Aruba l'alias **riconoscimento-specie@birdsongtech.it**: lo usa il pulsante «Richiedi file CSV per valutazione» dell'archivio. Le richieste si gestiscono come spiegato in `docs/VERIFICHE.md` (`crea_lotto.bat`, cartella `verifiche\`).
 
 1. Copiare sul Raspberry `raspberry/gateway.py` (legge i nuovi campi del messaggio H: minuti di ascolto e versione del modello) e le tabelle aggiornate:
