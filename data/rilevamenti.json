@@ -1,5 +1,5 @@
 {
- "aggiornato": "2026-11-05 09:37:20",
+ "aggiornato": "2026-11-05 09:58:13",
  "stazione": {
   "lat": 41.9597,
   "lon": 12.05215
@@ -1425,7 +1425,9 @@
    "pressione": 1011.5,
    "lat": 41.9597,
    "lon": 12.05215,
-   "quota": 2.5
+   "quota": 2.5,
+   "modello": null,
+   "campione": false
   },
   {
    "id": "20261030-111530-TORRE-FLAVIA-01",
@@ -1441,7 +1443,9 @@
    "pressione": 1012.8,
    "lat": 41.9597,
    "lon": 12.05215,
-   "quota": 2.5
+   "quota": 2.5,
+   "modello": null,
+   "campione": false
   },
   {
    "id": "20261030-102100-TORRE-FLAVIA-01",
@@ -1457,7 +1461,9 @@
    "pressione": 1013.2,
    "lat": 41.9597,
    "lon": 12.05215,
-   "quota": 2.5
+   "quota": 2.5,
+   "modello": null,
+   "campione": false
   }
  ]
 }
