@@ -1,5 +1,5 @@
 window.BIRDSONG = {
- "aggiornato": "2026-11-05 09:58:13",
+ "aggiornato": "2026-11-05 10:32:14",
  "stazione": {
   "lat": 41.9597,
   "lon": 12.05215
@@ -1409,6 +1409,10 @@ window.BIRDSONG = {
     "pagina": "https://commons.wikimedia.org/wiki/File:Northern_Lapwing.jpg"
    }
   }
+ },
+ "revisori": {
+  "citati": [],
+  "anonimi": 0
  },
  "rilevamenti": [
   {
