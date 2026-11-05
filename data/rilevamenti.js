@@ -1,5 +1,5 @@
 window.BIRDSONG = {
- "aggiornato": "2026-11-03 15:40:43",
+ "aggiornato": "2026-11-05 09:09:39",
  "stazione": {
   "lat": 41.9597,
   "lon": 12.05215
