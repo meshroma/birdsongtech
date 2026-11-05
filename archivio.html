@@ -49,6 +49,43 @@
   .nessuno{padding:40px 20px;text-align:center;color:var(--piuma)}
   .nessuno p{margin:0 0 14px}
 
+
+  /* tabella scorrevole con intestazione fissa */
+  .contenitore{max-height:560px;overflow:auto}
+  .tabella thead th{position:sticky;top:0;z-index:1;background:#1f2528}
+
+  /* ---- grafico canti per specie ---- */
+  .grafico-specie{margin-top:34px;background:rgba(28,33,36,.86);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px 22px 18px}
+  .grafico-specie h2{font-size:22px;margin:0}
+  .grafico-specie .sotto-titolo{margin:4px 0 0;font-size:15px;color:var(--testo)}
+  .grafico-specie .sotto{margin:6px 0 0;font-size:14px;color:var(--piuma)}
+  .leg-specie{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 12px;font-size:13px;color:var(--piuma)}
+  .leg-specie span{display:inline-flex;align-items:center;gap:7px}
+  .leg-specie i{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .barre{display:grid;grid-template-columns:minmax(120px,220px) 1fr 44px;gap:4px 12px;align-items:center}
+  .barre .nome{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:var(--testo);background:none;border:none;text-align:left;padding:3px 0;font-family:inherit}
+  .barre .nome:hover{color:var(--arancio-chiaro)}
+  .barre .nome small{font-weight:400;font-style:italic;color:var(--piuma);margin-left:6px;font-family:var(--serif);font-size:13px}
+  .barre .traccia{position:relative;height:18px;display:flex;gap:2px}
+  .barre .seg{height:100%;min-width:3px}
+  .barre .seg:first-child{border-radius:4px 0 0 4px}
+  .barre .seg:last-child{border-radius:0 4px 4px 0}
+  .barre .seg:only-child{border-radius:4px}
+  .barre .riga:hover .seg,.barre .seg:hover{filter:brightness(1.15)}
+  .barre .tot{font-size:14px;font-variant-numeric:tabular-nums;color:var(--piuma);text-align:right}
+  .barre .riga{display:contents}
+  .assi{display:grid;grid-template-columns:minmax(120px,220px) 1fr 44px;gap:0 12px;margin-top:8px;font-size:12px;color:var(--piuma)}
+  .assi .scala{position:relative;height:16px;border-top:1px solid var(--linea)}
+  .assi .scala span{position:absolute;top:3px;transform:translateX(-50%);font-variant-numeric:tabular-nums}
+  .piu-specie{margin-top:12px}
+  #sugg{position:fixed;z-index:50;pointer-events:none;background:#0f1315;border:1px solid var(--linea);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+  #sugg b{color:var(--testo)}
+  @media (max-width:720px){
+    .contenitore{max-height:70vh}
+    .barre,.assi{grid-template-columns:minmax(90px,130px) 1fr 34px;gap:4px 8px}
+    .barre .nome small{display:none}
+  }
+
   @media (max-width:980px){ .filtri{grid-template-columns:1fr 1fr} .campo.cerca{grid-column:1/-1} }
   @media (max-width:720px){
     .tabella thead{display:none}
@@ -130,6 +167,20 @@
       </div>
     </div>
   </section>
+  <section class="grafico-specie" id="grafico-specie" aria-labelledby="t-grafico" hidden>
+    <h2 id="t-grafico">birdsongtech performance</h2>
+    <p class="sotto-titolo">Canti riconosciuti per specie, divisi per affidabilità del riconoscimento</p>
+    <p class="sotto" id="g-sotto"></p>
+    <div class="leg-specie" aria-hidden="true">
+      <span><i style="background:#ffc896"></i>affidabilità 90-100%</span>
+      <span><i style="background:#ec7a32"></i>80-90%</span>
+      <span><i style="background:#a84e1c"></i>fino all'80%</span>
+    </div>
+    <div class="barre" id="barre" role="list"></div>
+    <div class="assi" aria-hidden="true"><span></span><div class="scala" id="scala"></div><span></span></div>
+    <button type="button" class="btn secondario piccolo piu-specie" id="piu-specie" hidden></button>
+  </section>
+  <div id="sugg" hidden></div>
 </main>
 
 <footer class="piede">
@@ -151,6 +202,7 @@
   /* fasce di affidabilita': 80 = fino all'80%, 90 = 80-90%, 100 = 90-100% */
   const nellaFascia = (s, v) => !v || (v === '80' ? s < 0.80 : v === '90' ? s >= 0.80 && s < 0.90 : s >= 0.90);
   let ordine = {col:'quando', dir:-1};
+  let R = D.rilevamenti;
 
   /* opzioni */
   $('elenco-specie').innerHTML = specieConteggio().map(s => `<option value="${esc(s.specie)}">${esc(s.sci)}</option>`).join('');
@@ -179,7 +231,7 @@
 
   function mostra(){
     const t = norm(f.testo.value), v = fascia();
-    let lista = D.rilevamenti.filter(r =>
+    let lista = R.filter(r =>
       (!t || norm(r.specie).includes(t) || norm(r.sci).includes(t)) &&
       (!f.dal.value || r.data >= f.dal.value) &&
       (!f.al.value || r.data <= f.al.value) &&
@@ -193,9 +245,9 @@
     $('conteggio').innerHTML = lista.length
       ? `<b>${lista.length}</b> ${lista.length === 1 ? 'canto trovato' : 'canti trovati'}`
       : '';
-    $('nessuno').hidden = lista.length > 0 || D.rilevamenti.length === 0;
-    if (D.rilevamenti.length === 0) $('conteggio').textContent = "L'archivio è ancora vuoto: i canti compariranno qui dopo la prima pubblicazione.";
-    document.querySelector('.contenitore').hidden = D.rilevamenti.length === 0;
+    $('nessuno').hidden = lista.length > 0 || R.length === 0;
+    if (R.length === 0) $('conteggio').textContent = "L'archivio è ancora vuoto: i canti compariranno qui dopo la prima pubblicazione.";
+    document.querySelector('.contenitore').hidden = R.length === 0;
 
     $('righe').innerHTML = lista.map(r => {
       const meteo = [r.temperatura != null ? `${r.temperatura} °C` : null, r.pressione != null ? `${r.pressione} hPa` : null].filter(Boolean).join(' · ') || '—';
@@ -207,6 +259,7 @@
         <td>${bottoneAscolta(r)}</td>
       </tr>`;
     }).join('');
+    grafico(lista);
     aggiornaIndirizzo();
   }
 
@@ -219,6 +272,72 @@
     th.setAttribute('aria-sort', ordine.dir > 0 ? 'ascending' : 'descending');
     mostra();
   }));
+  /* ---- grafico: canti per specie, divisi per fascia di affidabilita' ---- */
+  const COL = {alta:'#ffc896', media:'#ec7a32', bassa:'#a84e1c'};
+  const PRIME = 15;
+  let tutte = false;
+  function grafico(lista){
+    const sez = $('grafico-specie');
+    sez.hidden = !lista.length;
+    if (!lista.length) return;
+    const m = new Map();
+    for (const r of lista){
+      const e = m.get(r.specie) || {specie:r.specie, sci:r.sci, alta:0, media:0, bassa:0, n:0};
+      e[r.score >= 0.90 ? 'alta' : r.score >= 0.80 ? 'media' : 'bassa']++; e.n++;
+      m.set(r.specie, e);
+    }
+    const elenco = [...m.values()].sort((a,b) => b.n - a.n || a.specie.localeCompare(b.specie,'it'));
+    const max = elenco[0].n;
+    const passo = max <= 5 ? 1 : max <= 10 ? 2 : max <= 25 ? 5 : max <= 50 ? 10 : max <= 125 ? 25 : max <= 250 ? 50 : 100;
+    const fondo = Math.ceil(max / passo) * passo;
+    const filtrato = f.testo.value.trim() || f.dal.value || f.al.value || fascia();
+    $('g-sotto').textContent = `${lista.length} ${lista.length === 1 ? 'canto' : 'canti'} di ${elenco.length} ${elenco.length === 1 ? 'specie' : 'specie diverse'}` +
+      (filtrato ? ', con i filtri impostati sopra.' : ', tutto l\'archivio.') + ' In alto le specie più presenti. Clicca un nome per vederne i canti.';
+    const mostrate = tutte ? elenco : elenco.slice(0, PRIME);
+    $('barre').innerHTML = mostrate.map(e => {
+      const seg = ['alta','media','bassa'].filter(k => e[k]).map(k =>
+        `<span class="seg" style="width:${e[k]/fondo*100}%;background:${COL[k]}" data-k="${k}" data-v="${e[k]}"></span>`).join('');
+      return `<div class="riga" role="listitem" data-specie="${esc(e.specie)}" data-n="${e.n}">
+        <button type="button" class="nome" title="Mostra i canti di ${esc(e.specie)}">${esc(e.specie)}<small>${esc(e.sci)}</small></button>
+        <div class="traccia" aria-label="${esc(e.specie)}: ${e.n} canti (90-100%: ${e.alta}, 80-90%: ${e.media}, fino all'80%: ${e.bassa})">${seg}</div>
+        <span class="tot">${e.n}</span></div>`;
+    }).join('');
+    let tacche = '';
+    for (let v = 0; v <= fondo; v += passo) tacche += `<span style="left:${v/fondo*100}%">${v}</span>`;
+    $('scala').innerHTML = tacche;
+    const piu = $('piu-specie');
+    piu.hidden = elenco.length <= PRIME;
+    piu.textContent = tutte ? `Mostra solo le prime ${PRIME}` : `Mostra tutte le ${elenco.length} specie`;
+  }
+  $('piu-specie').addEventListener('click', () => { tutte = !tutte; mostra(); });
+  $('barre').addEventListener('click', e => {
+    const b = e.target.closest('.nome'); if (!b) return;
+    f.testo.value = b.closest('.riga').dataset.specie; mostra();
+    document.querySelector('.esiti').scrollIntoView({behavior:'smooth', block:'start'});
+  });
+  /* suggerimento al passaggio del mouse */
+  const sugg = $('sugg');
+  const NOMI = {alta:'90-100%', media:'80-90%', bassa:"fino all'80%"};
+  $('barre').addEventListener('mousemove', e => {
+    const seg = e.target.closest('.seg'), riga = e.target.closest('.riga');
+    if (!riga || !seg){ sugg.hidden = true; return; }
+    const n = +riga.dataset.n, v = +seg.dataset.v;
+    sugg.innerHTML = `<b>${esc(riga.dataset.specie)}</b><br>affidabilità ${NOMI[seg.dataset.k]}: ${v} ${v === 1 ? 'canto' : 'canti'} (${Math.round(v/n*100)}%)<br>totale: ${n}`;
+    sugg.hidden = false;
+    const w = sugg.offsetWidth;
+    sugg.style.left = Math.min(e.clientX + 14, innerWidth - w - 8) + 'px';
+    sugg.style.top = (e.clientY + 14) + 'px';
+  });
+  $('barre').addEventListener('mouseleave', () => { sugg.hidden = true; });
+
+  /* auto-aggiornamento: ricarica i dati ogni 30 minuti */
+  setInterval(() => {
+    const sc = document.createElement('script');
+    sc.src = 'data/rilevamenti.js?t=' + Date.now();
+    sc.onload = () => { if (window.BIRDSONG) R = window.BIRDSONG.rilevamenti || R; mostra(); sc.remove(); };
+    document.body.appendChild(sc);
+  }, 30 * 60 * 1000);
+
   function azzera(){ f.testo.value=''; f.dal.value=''; f.al.value=''; pallini[0].checked=true; mostra(); }
   $('azzera').addEventListener('click', azzera);
   $('azzera2').addEventListener('click', azzera);
