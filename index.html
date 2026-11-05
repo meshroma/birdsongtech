@@ -127,7 +127,7 @@
 
   <section class="sezione" aria-labelledby="t-percorso">
     <header>
-      <h2 id="t-percorso">Dal canneto al tuo schermo</h2>
+      <h2 id="t-percorso">Dalla vegetazione al tuo schermo</h2>
       <p class="nota">Il viaggio di ogni registrazione, dalla stazione nella palude fino a questo archivio.</p>
     </header>
     <ol class="passi">
@@ -228,10 +228,10 @@
   /* elenco stazioni */
   const nodi = document.getElementById('nodi');
   nodi.innerHTML = D.nodi.length ? D.nodi.map(n => `
-    <li><h3>Stazione nel canneto</h3>
+    <li><h3>Stazione di ascolto</h3>
       <p><b>${n.rilevamenti}</b> ${n.rilevamenti === 1 ? 'canto riconosciuto' : 'canti riconosciuti'} · ultimo: <b>${esc(n.ultima_specie)}</b>, ${dataLunga(n.ultimo.slice(0,10))}</p>
       <p>${n.quota != null ? `Quota ${n.quota} m s.l.m.` : ''}${n.batteria != null ? ` · batteria ${n.batteria}%` : ''}</p>
-    </li>`).join('') : '<li><h3>Stazione nel canneto</h3><p>In attesa dei primi canti: compariranno qui non appena saranno pubblicati.</p></li>';
+    </li>`).join('') : '<li><h3>Stazione di ascolto</h3><p>In attesa dei primi canti: compariranno qui non appena saranno pubblicati.</p></li>';
 
   /* mappa */
   const box = document.getElementById('mappa');

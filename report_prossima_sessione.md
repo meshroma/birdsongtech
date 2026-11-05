@@ -4,9 +4,11 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
 
 ## Fatto
 
+- Chiave SSH dal PC al Raspberry installata (5/11/2026): `aggiorna_birdsong.bat` non chiede più la password e fa la copia di sicurezza su `/home/pi/birdsongtech_backup/`.
+
 **Sito** (GitHub Pages, in futuro www.birdsongtech.it)
 - Tre pagine con il logo birdsongtech, colori grafite e arancio, sfondo grigio uniforme:
-  - **Home**: ultimo canto con foto, i 5 passaggi "Dal canneto al tuo schermo", mappa OpenStreetMap senza chiave, specie ascoltate, ringraziamenti alla Città Metropolitana di Roma Capitale.
+  - **Home**: ultimo canto con foto, i 5 passaggi "Dalla vegetazione al tuo schermo", mappa OpenStreetMap senza chiave, specie ascoltate, ringraziamenti alla Città Metropolitana di Roma Capitale.
   - **Archivio**: ricerca per specie, date, affidabilità e "solo con audio".
   - **Visualizzatore 3D** (`player.html`): motore di venomez-viper adattato, punti e linee più luminosi, logo, scheda con foto, presenza a Torre Flavia e dati del rilevamento (niente microfono: la registrazione dei visitatori non è prevista).
 - Stazione unica, chiamata ovunque "Monumento Naturale Palude di Torre Flavia". Coordinate: 41.95970 N, 12.05215 E.
@@ -49,7 +51,6 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
 
 **A ogni sessione:** aggiornare insieme sito, `docs` (con `docs/ORE_DI_LAVORO.md` e le immagini in `docs/sorgenti/`) e la presentazione in `presentazione/`.
 
-0. **Chiave SSH dal PC al Raspberry** (raspberry/LEGGIMI.md): serve per la copia di sicurezza automatica degli audio sulla SD del Pi e toglie le richieste di password.
 0. Creare su Aruba l'alias **riconoscimento-specie@birdsongtech.it**: lo usa il pulsante «Richiedi file CSV per valutazione» dell'archivio. Le richieste si gestiscono come spiegato in `docs/VERIFICHE.md` (`crea_lotto.bat`, cartella `verifiche\`).
 
 1. Copiare sul Raspberry `raspberry/gateway.py` (legge i nuovi campi del messaggio H: minuti di ascolto e versione del modello) e le tabelle aggiornate:
