@@ -3,8 +3,8 @@ chcp 65001 > nul
 title birdsongtech - nuovo lotto da verificare
 cd /d "%~dp0"
 
-:: Numero di canti nel lotto da spedire al revisore
-set QUANTI=40
+:: Numero di canti nel lotto da spedire al revisore (audio a 32 kHz: circa 1 MB l'uno, 20 stanno in un'email)
+set QUANTI=20
 
 echo ============================================================
 echo   BIRDSONGTECH - LOTTO DI CANTI DA FAR VERIFICARE

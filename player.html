@@ -197,7 +197,7 @@ body.con-spettro #avvio{padding-bottom:200px}
   Ascolta e guarda il canto</button></div>
 
 <section id="spettro" hidden aria-label="Spettrogramma del canto">
-  <div class="testa"><b>Spettrogramma</b><span id="sp-info">tempo → , frequenza ↑ (0-12 kHz), colore = intensità</span>
+  <div class="testa"><b>Spettrogramma</b><span id="sp-info">tempo → , frequenza ↑ (0-16 kHz), colore = intensità</span>
     <span class="dx"><span id="sp-leg"></span><button type="button" id="sp-chiudi">Nascondi</button></span></div>
   <div class="area"><canvas id="sp-tela"></canvas><div class="msg" id="sp-msg">Calcolo dello spettrogramma…</div></div>
 </section>
@@ -708,11 +708,11 @@ animate();
 
 <script>
 /* ════════════════ Spettrogramma 2D (stile Raven) ════════════════
-   Calcolato una volta sul file intero: STFT 1024 punti a 32 kHz, passo 256 (8 ms), 0-12 kHz lineare.
+   Calcolato una volta sul file intero: STFT 1024 punti a 32 kHz, passo 256 (8 ms), 0-16 kHz lineare.
    I riquadri mostrano dove il modello ha riconosciuto le specie del file (finestra di 3 s). */
 (function(){
   'use strict';
-  const SR=32000, N=1024, HOP=256, FMAX=12000, FINESTRA=3, GAMMA_DB=70;
+  const SR=32000, N=1024, HOP=256, FMAX=16000, FINESTRA=3, GAMMA_DB=70;
   const tela=$('sp-tela'), ctx=tela.getContext('2d'), msg=$('sp-msg');
   let img=null, durata=0, calcolato=false, boxes=[];
   const COLORI=[[10,13,15],[58,22,80],[150,40,90],[230,95,45],[255,190,90],[255,245,200]];
@@ -768,7 +768,7 @@ animate();
     if(img){ const off=document.createElement('canvas');off.width=img.width;off.height=img.height;off.getContext('2d').putImageData(img,0,0);
       ctx.imageSmoothingEnabled=true; ctx.drawImage(off,L,0,w,h); }
     ctx.font='10.5px system-ui,sans-serif'; ctx.fillStyle='rgba(255,255,255,.55)'; ctx.strokeStyle='rgba(255,255,255,.12)';
-    for(let k=0;k<=FMAX;k+=2000){const y=h-k/FMAX*h; ctx.fillText(k?(k/1000)+'k':'0',2,Math.max(9,Math.min(h-2,y+3))); ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(W,y);ctx.stroke();}
+    for(let k=0;k<=FMAX;k+=4000){const y=h-k/FMAX*h; ctx.fillText(k?(k/1000)+'k':'0',2,Math.max(9,Math.min(h-2,y+3))); ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(W,y);ctx.stroke();}
     if(durata){ const passo=durata>10?2:1; for(let t=0;t<=durata;t+=passo){const x=L+t/durata*w; ctx.fillText(t+' s',Math.min(W-22,x+2),H-3);} }
     /* riquadri delle specie riconosciute */
     boxes.forEach(b=>{const x0=L+b.t/durata*w, x1=L+Math.min(durata,b.t+FINESTRA)/durata*w;

@@ -733,7 +733,7 @@ def selezioni_raven(conn, cartella, url_scelti):
             for k, (ts, nodo, sp, sci, score, _, _, _) in enumerate(gruppo, start=1):
                 t0 = max(0.0, (datetime.strptime(ts, FORMATO_TS) - inizio).total_seconds())
                 t1 = min(t0 + FINESTRA_MODELLO, DURATA_MAX)
-                w.writerow([k, "Spectrogram 1", 1, f"{t0:.3f}", f"{t1:.3f}", 0, 12000, sp, sci,
+                w.writerow([k, "Spectrogram 1", 1, f"{t0:.3f}", f"{t1:.3f}", 0, 16000, sp, sci,
                             round((score or 0) * 100), chiave_record(ts, nodo, sci, sp)])
         locale = gruppo[0][6]
         if locale and os.path.exists(os.path.join(CARTELLA, *locale.split("/"))):
@@ -908,9 +908,9 @@ def backup_raspberry():
 
 if __name__ == "__main__":
     conn = apri_database()
-    if "--lotto" in sys.argv:          # python pubblica.py --lotto 40   -> crea un file da spedire a un revisore
+    if "--lotto" in sys.argv:          # python pubblica.py --lotto 20   -> crea un file da spedire a un revisore
         i = sys.argv.index("--lotto")
-        quanti = int(sys.argv[i + 1]) if len(sys.argv) > i + 1 and sys.argv[i + 1].isdigit() else 40
+        quanti = int(sys.argv[i + 1]) if len(sys.argv) > i + 1 and sys.argv[i + 1].isdigit() else 20
         try:
             importa_verifiche(conn)
             crea_lotto(conn, quanti)
