@@ -68,6 +68,8 @@ if errorlevel 1 (
     echo       Nessun dato nuovo.
 )
 :: eventuali modifiche alle pagine o agli script finiscono in un commit separato
+:: docs\ e presentazione\ restano solo sul PC: se erano gia' su GitHub li toglie (i file sul PC restano)
+git rm -r -q --cached --ignore-unmatch docs presentazione > nul 2>&1
 git add -A
 git diff --cached --quiet
 if errorlevel 1 (

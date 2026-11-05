@@ -193,3 +193,10 @@ presentazione/
 # file da cancellare a mano
 _da_eliminare/
 *.db-journal
+
+# verifiche degli esperti: file con i nomi dei revisori, restano solo sul PC
+lotti/
+verifiche/
+
+# documentazione tecnica: resta solo sul PC, non va pubblicata su GitHub
+docs/

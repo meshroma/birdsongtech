@@ -177,6 +177,7 @@
     <h2 id="t-grazie">Ringraziamenti</h2>
     <p class="prosa">Il progetto birdsongtech si svolge nel Monumento Naturale Palude di Torre Flavia - Ladispoli - Roma, area protetta gestita dalla <strong>Città Metropolitana di Roma Capitale</strong>. Ringraziamo l'ente gestore per aver reso possibile l'ascolto e la documentazione della vita della palude.</p>
     <p class="prosa">Partner tecnico: <strong>Associazione Radioamatori Italiani, sezione Alto Lazio</strong> - <a href="https://www.arialtolazio.it" target="_blank" rel="noopener">www.arialtolazio.it</a></p>
+    <p class="prosa" id="revisori" hidden></p>
     <p class="prosa">Restiamo a disposizione per modifiche e/o integrazioni e/o correzioni che si rendessero necessarie.</p>
   </section>
 </main>
@@ -190,6 +191,17 @@
 
 <script src="data/rilevamenti.js"></script>
 <script src="assets/sito.js"></script>
+<script>
+/* revisori esperti che hanno verificato i canti (solo chi ha dato il consenso) */
+(function(){
+  const R = (window.BIRDSONG || {}).revisori, el = document.getElementById('revisori');
+  if (!R || !el || (!R.citati.length && !R.anonimi)) return;
+  const nomi = R.citati.map(r => `<strong>${BS.esc(r.nome)}</strong>${r.ente ? ' (' + BS.esc(r.ente) + ')' : ''}`);
+  if (R.anonimi) nomi.push(R.anonimi === 1 ? 'un revisore che ha preferito restare anonimo' : `${R.anonimi} revisori che hanno preferito restare anonimi`);
+  el.innerHTML = `Grazie ai revisori esperti che verificano i canti riconosciuti e aiutano a migliorare il modello: ${nomi.join(', ')}.`;
+  el.hidden = false;
+})();
+</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function(){

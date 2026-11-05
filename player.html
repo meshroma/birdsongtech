@@ -244,6 +244,8 @@ function mostraErrore(t){$('errore').textContent=t;$('errore').style.display='bl
     if(r.temperatura!=null||r.pressione!=null) righe.push(['Meteo',[r.temperatura!=null?r.temperatura+' °C':null,r.pressione!=null?r.pressione+' hPa':null].filter(Boolean).join(', ')]);
     if(r.quota!=null) righe.push(['Quota',r.quota+' m s.l.m.']);
     if(r.modello) righe.push(['Modello',r.modello]);
+    if(r.verifica){const v=r.verifica;const t={confermato:'confermato',errato:'errato'+(v.specie_corretta?' (è '+v.specie_corretta+')':''),controverso:'controverso',dubbio:'dubbio'}[v.stato];
+      righe.push(['Verifica',esc(t)+(v.revisori&&v.revisori.length?'<br><small style="color:var(--piuma)">da '+esc(v.revisori.join(', '))+'</small>':'')]);}
     if(r.campione) righe.push(['Nota','campione di controllo (salvato a caso per valutare il modello)']);
     $('s-dati').innerHTML=righe.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('');
     /* altri canti della stessa specie con audio */

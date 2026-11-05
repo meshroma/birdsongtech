@@ -42,8 +42,7 @@ Monitoraggio bioacustico automatico degli uccelli nel **Monumento Naturale Palud
 | `canto.wav` | Canto dimostrativo per il visualizzatore |
 | `ricerca.html`, `apri_3d.html` | Rimandano alle nuove pagine, così i vecchi link funzionano ancora |
 | `raspberry/` | Gateway LoRa della stazione base e tabelle delle specie e della stazione: vedi [raspberry/LEGGIMI.md](raspberry/LEGGIMI.md) |
-| `docs/ISTRUZIONI.md` | [Istruzioni operative](docs/ISTRUZIONI.md): uso quotidiano, configurazione, foto, dominio |
-| `docs/PROTOCOLLO_LORA.md` | [Protocollo BS1](docs/PROTOCOLLO_LORA.md) tra stazione in campo e base: formato dei messaggi, orari, nomi dei file, configurazione Meshtastic |
+| `docs/` | Documentazione tecnica (istruzioni, protocollo LoRa, bilancio energetico, verifiche degli esperti): resta solo sul PC del progetto e non è pubblicata qui |
 
 ## Crediti
 

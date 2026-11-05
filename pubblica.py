@@ -52,6 +52,11 @@ DIMOSTRATIVI = {"2026-10-30 10:21:00", "2026-10-30 11:15:30", "2026-10-30 14:02:
 # Posizione della postazione usata quando una riga non ha coordinate GPS
 STAZIONE_DEFAULT = {"lat": 41.95970, "lon": 12.05215}
 
+# ---- verifiche degli esperti (docs/VERIFICHE.md)
+CARTELLA_VERIFICHE = os.path.join(CARTELLA, "verifiche")   # qui salvi i file restituiti dai revisori
+CARTELLA_LOTTI = os.path.join(CARTELLA, "lotti")           # qui pubblica.py --lotto crea i file da spedire
+SITO = "https://meshroma.github.io/birdsongtech/"          # indirizzo diretto del sito (link nei lotti)
+
 FORMATO_TS = "%Y-%m-%d %H:%M:%S"
 DURATA_MAX = 16  # secondi: durata massima dei .wav registrati dalla XIAO
 SOGLIA_VALIDI = 0.80  # statistiche: un canto e' "valido" da questa affidabilita' in su
@@ -106,6 +111,19 @@ def apri_database():
             pressione REAL,
             umidita REAL,
             UNIQUE(timestamp, nodo)
+        )""")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS verifiche (
+            id_rilevamento TEXT NOT NULL,     -- come chiave_record(): 20261105-064512-TORRE-FLAVIA-01
+            revisore TEXT NOT NULL,           -- nome pubblico, oppure "revisore anonimo #xxxx" senza consenso
+            ente TEXT,
+            citato INTEGER,                   -- 1 = ha dato il consenso a comparire sul sito
+            esito TEXT NOT NULL,              -- ok | errato | dubbio
+            specie_corretta TEXT,
+            note TEXT,
+            file TEXT,
+            importato TEXT,
+            UNIQUE(id_rilevamento, revisore)
         )""")
     col_tel = {r[1] for r in cur.execute("PRAGMA table_info(telemetria)")}
     for nome, tipo in {"ascolto_oggi_min": "INTEGER", "ascolto_ieri_min": "INTEGER", "modello": "TEXT"}.items():
@@ -460,6 +478,176 @@ def esporta_statistiche(conn):
     print(f"[OK] Statistiche: {len(uscita)} giorni")
 
 
+
+# ---------------------------------------------------------------- verifiche degli esperti
+COLONNE_LOTTO = ["id", "data", "ora", "specie", "nome_scientifico", "affidabilita", "motivo", "ascolta_audio", "ascolta_3d",
+                 "verifica", "specie_corretta", "note", "revisore", "ente", "citami"]
+
+
+def _norm(t):
+    import unicodedata
+    t = unicodedata.normalize("NFD", str(t or "")).encode("ascii", "ignore").decode()
+    return t.strip().lower()
+
+
+def esito_da_testo(t):
+    """Accetta le risposte in tutti i modi ragionevoli: ✔ si ok corretto v 1 / ✘ no errato sbagliato x 0 / ? dubbio."""
+    raw = str(t or "").strip()
+    if raw in ("✔", "✓", "☑"):
+        return "ok"
+    if raw in ("✘", "✗", "×"):
+        return "errato"
+    n = _norm(raw)
+    if n in ("si", "s", "ok", "corretto", "corretta", "giusto", "giusta", "v", "1", "y", "yes", "true", "vero"):
+        return "ok"
+    if n in ("no", "n", "errato", "errata", "sbagliato", "sbagliata", "x", "0", "false", "falso"):
+        return "errato"
+    if n in ("?", "dubbio", "non so", "nonso", "incerto", "incerta", "forse"):
+        return "dubbio"
+    return None
+
+
+def _righe_file(percorso):
+    """Righe di un file di verifica: CSV (separato da ; o ,) oppure .xlsx salvato da Excel."""
+    if percorso.lower().endswith(".xlsx"):
+        try:
+            from openpyxl import load_workbook
+        except ImportError:
+            print(f"    [!] {os.path.basename(percorso)}: per i file .xlsx serve 'pip install openpyxl' (oppure salvalo come CSV)")
+            return []
+        ws = load_workbook(percorso, read_only=True, data_only=True).active
+        righe = list(ws.iter_rows(values_only=True))
+        if not righe:
+            return []
+        testa = [str(c or "").strip() for c in righe[0]]
+        return [dict(zip(testa, ["" if v is None else str(v) for v in r])) for r in righe[1:]]
+    with open(percorso, newline="", encoding="utf-8-sig", errors="replace") as f:
+        testo = f.read()
+    sep = ";" if testo.split("\n", 1)[0].count(";") >= testo.split("\n", 1)[0].count(",") else ","
+    return list(csv.DictReader(testo.splitlines(), delimiter=sep))
+
+
+def importa_verifiche(conn):
+    """Legge i file restituiti dai revisori (cartella verifiche/) e li salva nel database.
+    Rileggere lo stesso file non crea doppioni: la verifica di un revisore su un canto si aggiorna."""
+    if not os.path.isdir(CARTELLA_VERIFICHE):
+        os.makedirs(CARTELLA_VERIFICHE, exist_ok=True)
+        return 0
+    import hashlib
+    cur = conn.cursor()
+    esistenti = {chiave_record(ts, nodo) for ts, nodo in cur.execute("SELECT timestamp, nodo FROM rilevamenti_bioacustici")}
+    nuove = 0
+    for nome in sorted(os.listdir(CARTELLA_VERIFICHE)):
+        if not nome.lower().endswith((".csv", ".xlsx")) or nome.startswith("~$"):
+            continue
+        percorso = os.path.join(CARTELLA_VERIFICHE, nome)
+        lette = scartate = 0
+        for r in _righe_file(percorso):
+            r = {_norm(k): (v or "").strip() for k, v in r.items() if k}
+            esito = esito_da_testo(r.get("verifica"))
+            idr = r.get("id", "")
+            if not esito:
+                continue                                   # riga non compilata: si salta senza avvisi
+            if idr not in esistenti:
+                scartate += 1
+                continue
+            nome_rev = r.get("revisore") or f"revisore del file {nome}"
+            citato = _norm(r.get("citami")) in ("si", "s", "yes", "y", "1", "x", "ok", "✔")
+            if not citato:   # senza consenso il nome non entra nel database (che e' pubblico su GitHub)
+                nome_rev = "revisore anonimo #" + hashlib.sha1(_norm(nome_rev).encode()).hexdigest()[:4]
+            cur.execute("""INSERT INTO verifiche (id_rilevamento, revisore, ente, citato, esito, specie_corretta, note, file, importato)
+                           VALUES (?,?,?,?,?,?,?,?,?)
+                           ON CONFLICT(id_rilevamento, revisore) DO UPDATE SET
+                           ente=excluded.ente, citato=excluded.citato, esito=excluded.esito,
+                           specie_corretta=excluded.specie_corretta, note=excluded.note, file=excluded.file""",
+                        (idr, nome_rev, (r.get("ente") or None) if citato else None, 1 if citato else 0, esito,
+                         r.get("specie_corretta") or None, r.get("note") or None, nome if citato else None,
+                         datetime.now().strftime(FORMATO_TS)))
+            lette += 1
+        if lette or scartate:
+            print(f"    {nome}: {lette} verifiche" + (f", {scartate} righe con id sconosciuto" if scartate else ""))
+        nuove += lette
+    conn.commit()
+    print(f"[OK] Verifiche: {nuove} righe lette da verifiche/")
+    return nuove
+
+
+def stato_verifiche(conn):
+    """id_rilevamento -> {stato, ok, errato, dubbio, revisori, specie_corretta}.
+    stato: confermato (maggioranza ok), errato (maggioranza errato), controverso (pari), dubbio (solo '?')."""
+    voti = {}
+    for idr, rev, ente, citato, esito, corr in conn.execute(
+            "SELECT id_rilevamento, revisore, ente, citato, esito, specie_corretta FROM verifiche"):
+        v = voti.setdefault(idr, {"ok": 0, "errato": 0, "dubbio": 0, "revisori": [], "specie_corretta": []})
+        v[esito] += 1
+        if citato:
+            v["revisori"].append(rev + (f" ({ente})" if ente else ""))
+        if corr:
+            v["specie_corretta"].append(corr)
+    for v in voti.values():
+        v["stato"] = ("confermato" if v["ok"] > v["errato"] else "errato" if v["errato"] > v["ok"]
+                      else "controverso" if v["ok"] else "dubbio")
+        v["specie_corretta"] = max(set(v["specie_corretta"]), key=v["specie_corretta"].count) if v["specie_corretta"] else None
+    return voti
+
+
+def elenco_revisori(conn):
+    """Revisori che hanno dato il consenso, con il numero di canti verificati; piu' il numero degli anonimi."""
+    citati = [{"nome": n, "ente": e, "canti": c} for n, e, c in conn.execute(
+        """SELECT revisore, MAX(ente), COUNT(*) FROM verifiche WHERE citato=1 GROUP BY revisore ORDER BY COUNT(*) DESC, revisore""")]
+    anonimi = conn.execute("SELECT COUNT(DISTINCT revisore) FROM verifiche WHERE citato=0").fetchone()[0]
+    return {"citati": citati, "anonimi": anonimi}
+
+
+def crea_lotto(conn, quanti):
+    """Crea lotti/lotto_AAAAMMGG_hhmm.csv con i canti piu' utili da verificare (con audio pubblicato).
+    Priorita': campioni di controllo, specie fuori checklist, specie rare, fascia 80-90%, poi gli altri.
+    Esclude i canti gia' verificati da almeno 2 revisori."""
+    import random
+    checklist = schede_specie()
+    voti = stato_verifiche(conn)
+    righe = list(conn.execute("""SELECT timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, campione
+                                 FROM rilevamenti_bioacustici WHERE audio_url LIKE 'http%'"""))
+    conta = {}
+    for r in righe:
+        conta[r[2]] = conta.get(r[2], 0) + 1
+    candidati = []
+    for ts, nodo, sp, sci, score, url, camp in righe:
+        idr = chiave_record(ts, nodo)
+        gia = voti.get(idr, {})
+        if gia.get("ok", 0) + gia.get("errato", 0) >= 2:
+            continue
+        if camp:
+            prio, motivo = 0, "campione di controllo"
+        elif (sci or "").strip().lower() not in checklist:
+            prio, motivo = 1, "fuori checklist"
+        elif conta[sp] <= 3:
+            prio, motivo = 2, "specie rara nell'archivio"
+        elif (score or 0) < 0.90:
+            prio, motivo = 3, "affidabilita' 80-90%"
+        else:
+            prio, motivo = 4, "controllo a campione"
+        if gia:
+            prio += 0.5                                     # gia' verificato da un revisore: dopo gli altri
+        candidati.append((prio, random.random(), idr, ts, sp, sci, score, url, motivo))
+    if not candidati:
+        print("[!] Nessun canto con audio pubblicato da verificare.")
+        return None
+    candidati.sort()
+    scelti = sorted(candidati[:quanti], key=lambda c: c[3])
+    os.makedirs(CARTELLA_LOTTI, exist_ok=True)
+    nome = os.path.join(CARTELLA_LOTTI, f"lotto_{datetime.now():%Y%m%d_%H%M}.csv")
+    with open(nome, "w", newline="", encoding="utf-8-sig") as f:   # ; e BOM: si apre bene con Excel in italiano
+        w = csv.writer(f, delimiter=";")
+        w.writerow(COLONNE_LOTTO)
+        for _, _, idr, ts, sp, sci, score, url, motivo in scelti:
+            w.writerow([idr, ts[:10], ts[11:], sp, sci, f"{round((score or 0) * 100)}%", motivo, url,
+                        f"{SITO}player.html?id={idr}", "", "", "", "", "", ""])
+    print(f"[OK] Lotto creato: {nome}  ({len(scelti)} canti)")
+    print("     Allegalo alla risposta: il testo da usare e' in docs/VERIFICHE.md")
+    return nome
+
+
 # ---------------------------------------------------------------- export per il sito
 def esporta_dati(conn):
     cur = conn.cursor()
@@ -468,6 +656,7 @@ def esporta_dati(conn):
                temperatura, pressione, gps_lat, gps_lon, altitudine_mslm, modello, campione
         FROM rilevamenti_bioacustici ORDER BY timestamp DESC""")
     rilevamenti, nodi, in_attesa = [], {}, 0
+    voti = stato_verifiche(conn)
     for (ts, nodo, specie, sci, score, url, locale, bat, temp, pres, lat, lon, alt, modello, campione) in cur.fetchall():
         if MODO_LOCALE:  # prova sul PC: file della cartella audio/
             audio = locale if locale and os.path.exists(os.path.join(CARTELLA, *locale.split("/"))) else None
@@ -484,6 +673,10 @@ def esporta_dati(conn):
             "lat": lat, "lon": lon, "quota": alt,
             "modello": modello, "campione": bool(campione),
         })
+        v = voti.get(rilevamenti[-1]["id"])
+        if v:
+            rilevamenti[-1]["verifica"] = {"stato": v["stato"], "ok": v["ok"], "errato": v["errato"], "dubbio": v["dubbio"],
+                                           "revisori": v["revisori"], "specie_corretta": v["specie_corretta"]}
         n = nodi.setdefault(nodo, {"nodo": nodo, "rilevamenti": 0, "ultimo": ts, "ultima_specie": specie,
                                    "batteria": bat, "lat": None, "lon": None, "quota": alt})
         n["rilevamenti"] += 1
@@ -499,6 +692,7 @@ def esporta_dati(conn):
         "stazione": STAZIONE_DEFAULT,
         "nodi": sorted(nodi.values(), key=lambda n: n["nodo"]),
         "specie": schede_specie(),
+        "revisori": elenco_revisori(conn),
         "rilevamenti": rilevamenti,
     }
     os.makedirs(CARTELLA_DATI, exist_ok=True)
@@ -515,10 +709,20 @@ def esporta_dati(conn):
 
 if __name__ == "__main__":
     conn = apri_database()
+    if "--lotto" in sys.argv:          # python pubblica.py --lotto 40   -> crea un file da spedire a un revisore
+        i = sys.argv.index("--lotto")
+        quanti = int(sys.argv[i + 1]) if len(sys.argv) > i + 1 and sys.argv[i + 1].isdigit() else 40
+        try:
+            importa_verifiche(conn)
+            crea_lotto(conn, quanti)
+        finally:
+            conn.close()
+        sys.exit(0)
     try:
         importa_log(conn)
         importa_telemetria(conn)
         importa_audio(conn)
+        importa_verifiche(conn)
         carica_su_archive(conn)
         esporta_dati(conn)
         esporta_statistiche(conn)

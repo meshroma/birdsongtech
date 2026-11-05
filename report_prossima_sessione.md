@@ -47,7 +47,7 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
 
 ## Da fare
 
-0. Creare su Aruba l'alias **riconoscimento-specie@birdsongtech.it**: lo usa il pulsante «Richiedi file CSV per valutazione» dell'archivio.
+0. Creare su Aruba l'alias **riconoscimento-specie@birdsongtech.it**: lo usa il pulsante «Richiedi file CSV per valutazione» dell'archivio. Le richieste si gestiscono come spiegato in `docs/VERIFICHE.md` (`crea_lotto.bat`, cartella `verifiche\`).
 
 1. Copiare sul Raspberry `raspberry/gateway.py` (legge i nuovi campi del messaggio H: minuti di ascolto e versione del modello) e le tabelle aggiornate:
    `scp raspberry\gateway.py raspberry\stazioni.csv raspberry\specie.csv pi@192.168.1.100:/home/pi/`, poi `ssh -t pi@192.168.1.100 "sudo systemctl restart birdsong"`.
