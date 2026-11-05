@@ -1,1 +1,1 @@
-window.BIRDSONG_RADIO = {"aggiornato":"2026-11-06 00:47:56","preset":{"nome":"MEDIUM_FAST","frequenza_mhz":869.525,"banda_khz":250,"velocita_kbps":3.52,"sf":9,"snr_limite_db":-12.5},"giorni":{},"relay":{},"recenti":[],"archivi":[]};
+window.BIRDSONG_RADIO = {"aggiornato":"2026-11-06 00:59:06","preset":{"nome":"MEDIUM_FAST","frequenza_mhz":869.525,"banda_khz":250,"velocita_kbps":3.52,"sf":9,"snr_limite_db":-12.5},"giorni":{},"relay":{},"recenti":[],"archivi":[]};
