@@ -38,7 +38,12 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
   - marzo e luglio-settembre: spenta dalle 23 fino a 90 minuti prima dell'alba;
   - aprile-giugno: sempre accesa.
 - Scarico dei file e aggiornamenti firmware **da terra**: il Bluetooth accende su richiesta il Wi-Fi della XIAO per 20 minuti (scatola in cima al palo, da tirare giù solo per emergenze). Collegamenti in `docs/schema_collegamenti.png`.
-- **Fase di test: V4 sempre accesa**, che fa anche da caricatore. Alimentazione: pannello 18 V 10 W con riduttore a 5 V, 2 × EVE 18650 in parallelo.
+- **Fase di test: V4 sempre accesa.** Alimentazione:
+  - pannello 18 V 10 W → modulo MPPT DIY_CHARGER V12.0 (ponticello 18V);
+  - 2 × EVE 18650 in parallelo, con INA219 sul + della batteria;
+  - V4 dal connettore batteria.
+  
+  Bilancio in attivo tutto l'anno (`docs/BILANCIO_ENERGETICO.md`).
 
 ## Da fare
 
@@ -50,7 +55,10 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
    - prova dal telefono dei messaggi `BS1 H` e `BS1 D`, poi cancellare il rilevamento di prova sul Pi;
    - firmware della XIAO: ascolto, riconoscimento, coda, protocollo BS1, orari, nomi dei file, scarico via Wi-Fi su richiesta e aggiornamento OTA;
    - allineare `specie.csv` alle etichette del modello AI.
-4. Durante il test, misurare il consumo di V4 e XIAO e la corrente di carica. Poi decidere se tenere la V4 sempre accesa o usare un modulo MPPT separato.
+4. Durante il test, l'INA219 misura consumi e carica reali. Dopo una settimana di dati:
+   - aggiornare il bilancio energetico;
+   - valutare 4 batterie invece di 2;
+   - valutare il DS3231 per l'ora.
 5. Dominio www.birdsongtech.it: **registrato**. Ora funziona con un reindirizzamento nascosto di Aruba. Da sostituire con il collegamento diretto a GitHub Pages:
    - in Aruba: disattivare il reindirizzamento e creare il record CNAME `www` → `meshroma.github.io`; per l'indirizzo senza www, 4 record A verso GitHub;
    - su GitHub: Settings → Pages → Custom domain `www.birdsongtech.it`, poi Enforce HTTPS;

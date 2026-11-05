@@ -34,9 +34,22 @@ meshtastic --set serial.enabled true --set serial.mode TEXTMSG --set serial.echo
 
 Collegamenti: XIAO D6 (TX, GPIO43) → V4 GPIO47 (RX); XIAO D7 (RX, GPIO44) ← V4 GPIO48 (TX); GND in comune. Entrambe le schede lavorano a 3,3 V. La XIAO è alimentata dal pin 3V3 della V4 (J3 pin 2-3, max 500 mA).
 
-**Prova da fare subito, prima di scrivere il firmware.** Collega la V4 a un adattatore USB-seriale sul PC e apri un terminale a 38400 baud.
-1. Scrivi una riga, ad esempio `BS1 H TF01 90 4000 0`: il gateway sul Pi deve riceverla e rispondere.
-2. La risposta deve comparire sul terminale come `BASE: BS1 T TF01 1793...`.
+**Prova da fare subito, prima di scrivere il firmware: la XIAO come ponte.** La prova simula i messaggi della XIAO, quindi il PC deve parlare con i **pin GPIO47/48** della V4, non con la sua presa USB-C. Dalla USB-C della V4 passano solo il protocollo binario delle app Meshtastic e i log, quindi serve solo per configurarla. Il ponte lo fa la XIAO stessa: non serve comprare un adattatore USB-seriale, e in più si prova già il cablaggio definitivo.
+
+1. **Carica lo sketch** `firmware/ponte_seriale/ponte_seriale.ino` sulla XIAO con Arduino IDE.
+   - Scheda: *XIAO_ESP32S3*.
+   - Menu Strumenti: *USB CDC On Boot: Enabled*.
+   
+   Lo sketch copia tutto quello che arriva dalla USB della XIAO sui pin D6/D7, e viceversa.
+2. **Collega solo tre fili**, come nello schema `docs/schema_collegamenti.png`:
+   - XIAO D6 (TX) → V4 GPIO47 (RX)
+   - XIAO D7 (RX) ← V4 GPIO48 (TX)
+   - GND ↔ GND
+   
+   **Durante la prova non collegare il filo 3V3**: la XIAO prende corrente dalla USB del PC e la V4 dalla sua USB-C o dalla batteria. Con il 3V3 collegato ci sarebbero due alimentazioni in parallelo.
+3. **Apri il monitor seriale** di Arduino IDE sulla porta della XIAO, a 115200 baud (la velocità sulla USB non conta), con fine riga *A capo (NL)*. Va bene anche PuTTY.
+4. **Scrivi una riga**, ad esempio `BS1 H TF01 90 4000 0`: il gateway sul Pi deve riceverla e rispondere.
+5. **Controlla la risposta**: deve comparire nel monitor come `BASE: BS1 T TF01 1793...`.
 
 Se la risposta non compare, la ricezione su seriale in TEXTMSG non funziona con questo firmware. In quel caso si passa alla modalità `PROTO`, con la libreria Meshtastic per Arduino: il protocollo resta identico.
 
@@ -139,15 +152,39 @@ La XIAO calcola l'alba dalla data e dalle coordinate della stazione: 41.9597 N, 
 
 ## 7. Alimentazione
 
+Schema completo in `docs/schema_collegamenti.png`, bilancio in `docs/BILANCIO_ENERGETICO.md`.
+
+**Il percorso dell'energia:**
+1. **Pannello 18 V 10 W → modulo MPPT DIY_CHARGER V12.0**, con queste impostazioni:
+   - ponticello MPPT su **18V**;
+   - Sunlight Detect su **OFF**;
+   - uscite 5V/12V e USB-C **non usate**.
+   
+   Il modulo carica le batterie fino a circa 2,4 A, a 4,2 V. Il caricatore della V4, che arriva al massimo a 500 mA, e il convertitore diymore non si usano più.
+2. **Morsetti BATTERY del modulo → 2 × EVE 18650 in parallelo**, passando per l'**INA219**:
+   - VIN+ verso il modulo e la V4;
+   - VIN− verso le batterie.
+3. **Connettore batteria (SH1.25) della V4** collegato allo stesso + e alla massa comune. La V4 si alimenta dalle batterie e non dall'uscita 5 V del modulo, che costerebbe circa il 40 % di energia in più.
+4. **XIAO** dal pin 3V3 della V4. INA219 e BME280 dal 3V3 della XIAO, sul bus I²C D4/D5: INA219 all'indirizzo 0x40, BME280 a 0x76/0x77.
+
 ### Fase di test: V4 sempre accesa
 
-La V4 resta accesa e carica le batterie dal pannello (ingresso solare 4,7-6 V, dopo il riduttore 18 → 5 V). La configurazione dei nodi è gestita da te. Il Bluetooth resta acceso, per la manutenzione da sotto il palo.
+La V4 resta accesa. La configurazione dei nodi è gestita da te. Il Bluetooth resta acceso, per la manutenzione da sotto il palo.
 
 - La modalità risparmio di Meshtastic (`power.is_power_saving`) mette la scheda in sleep. Provala solo dopo aver verificato che il collegamento seriale con la XIAO funzioni, e ricontrolla che continui a funzionare anche con il risparmio attivo.
-- Durante il test misura con un tester USB, tra riduttore e Heltec, tre valori: il consumo della V4, quello della XIAO e la corrente di carica nelle ore di sole. Con quei numeri si decide la soluzione definitiva.
+- La XIAO legge l'INA219 ogni minuto (tensione e corrente) e:
+  - mette i valori reali nei campi `batteria%` e `batteria_mV` dei messaggi H e D;
+  - registra il bilancio di ogni giornata: Ah entrati, Ah usciti, carica minima e massima.
+  
+  Dopo una settimana di dati si confermano o si correggono le stime del bilancio energetico.
+
+### Protezione delle batterie
+
+La protezione da scarica del modulo MPPT vale solo per le sue uscite, che non usiamo. La gestisce quindi la XIAO:
+- sotto **3,45 V** smette di ascoltare e va in sonno profondo, svegliandosi ogni ora per ricontrollare la tensione;
+- riprende sopra **3,70 V**;
+- sotto **3,30 V** manda un ultimo `BS1 H` come allarme. Anche Meshtastic spegne la V4 quando la batteria è molto bassa.
 
 ### Da valutare dopo i test
-
-Se la XIAO **spegne** la V4 tra un invio e l'altro (con un MOSFET o un load switch sulla linea di alimentazione), anche il caricatore solare integrato della V4 si ferma. Due possibilità:
-- **(consigliata)** un modulo di carica solare MPPT a parte (es. CN3791), collegato al pannello da 18 V, che carica le due 18650 in parallelo e alimenta XIAO e V4. La V4 si accende e si spegne dalla XIAO.
-- la V4 resta sempre accesa e fa da caricatore. In questo caso non si può spegnere: si attiva il risparmio energetico di Meshtastic e si mette in conto il suo consumo continuo nel bilancio energetico.
+- **4 batterie invece di 2**, per circa 5 giorni coperti di fila d'inverno invece di 2-2,5.
+- **Meno consumi:** Bluetooth della V4 spento sul campo, schermo OLED spento dopo pochi secondi, XIAO a 160 MHz.

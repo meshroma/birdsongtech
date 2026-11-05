@@ -32,9 +32,25 @@ a{color:var(--arancio-chiaro)}
 #marchio b{font-weight:700}#marchio i{font-style:normal;font-weight:400}
 #marchio .in-prova{display:block;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#ffa25e;margin-top:1px;line-height:1.2}
 
+
+/* ---- pulsante indietro ---- */
+#indietro{position:fixed;top:66px;left:20px;z-index:30;display:inline-flex;align-items:center;gap:6px;font:600 13px/1 var(--sans);
+  padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(28,33,36,.88);color:var(--testo);cursor:pointer;text-decoration:none}
+#indietro:hover{border-color:var(--arancio);color:#fff}
+
+/* ---- istruzioni ---- */
+#istruzioni{margin-top:16px;border-top:1px solid var(--linea);padding-top:12px;font-size:13px;line-height:1.5;color:#c9cfcc}
+#istruzioni summary{cursor:pointer;font-weight:600;color:var(--testo);font-size:13.5px;list-style-position:inside}
+#istruzioni ul{margin:8px 0 0 16px;display:grid;gap:5px}
+
+/* ---- crediti ---- */
+#crediti{position:fixed;bottom:12px;left:350px;right:300px;z-index:20;font-size:11.5px;line-height:1.55;color:rgba(255,255,255,.5);text-align:center}
+#crediti a{color:rgba(255,190,140,.85)}
+.crediti-mobile{display:none}
+
 /* ---- scheda del rilevamento ---- */
-#scheda{position:fixed;top:72px;left:20px;width:310px;z-index:30;background:rgba(28,33,36,.88);border:1px solid rgba(255,255,255,.08);
-  border-radius:16px;padding:20px;backdrop-filter:blur(6px);max-height:calc(100% - 92px);overflow-y:auto}
+#scheda{position:fixed;top:112px;left:20px;width:310px;z-index:30;background:rgba(28,33,36,.88);border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:20px;backdrop-filter:blur(6px);max-height:calc(100% - 132px);overflow-y:auto}
 #scheda .nome{font-size:24px;font-weight:700;line-height:1.15}
 #scheda .sci{font-family:var(--serif);font-style:italic;color:var(--piuma);font-size:17px;margin-top:2px}
 #s-foto figure{margin:0 0 14px}
@@ -96,7 +112,9 @@ a{color:var(--arancio-chiaro)}
 
 @media (max-width:720px){
   #scheda{top:auto;bottom:0;left:0;right:0;width:auto;border-radius:16px 16px 0 0;max-height:46%;padding:16px}
-  #altri,#legenda{display:none}
+  #altri,#legenda,#crediti{display:none}
+  .crediti-mobile{display:block;margin-top:10px;font-size:11px;line-height:1.5;color:var(--piuma)}
+  #indietro{top:62px}
   #s-foto figure{float:left;width:42%;margin:0 12px 6px 0}
   #s-foto figcaption{font-size:9.5px}
   #s-dati{clear:both}
@@ -110,6 +128,8 @@ a{color:var(--arancio-chiaro)}
 <canvas id="c" aria-label="Visualizzazione tridimensionale delle frequenze del canto"></canvas>
 
 <a id="marchio" href="index.html" title="Torna alla home"><img src="assets/logo-simbolo.png" alt="" width="40" height="38"><span><b>birdsong</b><i>tech</i><small class="in-prova">sito in fase di test</small></span></a>
+
+<a id="indietro" href="index.html" title="Torna alla pagina precedente">‹ Indietro</a>
 
 <aside id="scheda" aria-live="polite">
   <div id="s-foto"></div>
@@ -132,13 +152,26 @@ a{color:var(--arancio-chiaro)}
     </div>
     <p id="errore" role="alert"></p>
   </div>
+  <details id="istruzioni" open>
+    <summary>Come usare il visualizzatore</summary>
+    <ul>
+      <li>Clicca sul pulsante <b>Ascolta</b>: partirà la visualizzazione del canto. Fai di nuovo clic per fermarti.</li>
+      <li>Trascina col mouse in qualsiasi punto per ruotare la scena in 3D.</li>
+      <li>Scorri con la rotella per ingrandire o rimpicciolire.</li>
+      <li>La scena ruota lentamente da sola: trascinandola, la rotazione si interrompe.</li>
+      <li>Clicca nuovamente su <b>Ascolta</b> per terminare.</li>
+    </ul>
+  </details>
   <div id="altri" hidden><h2 id="altri-titolo">Altri canti della stessa specie</h2><ul id="altri-lista"></ul></div>
   <p id="ente">Monumento Naturale Palude di Torre Flavia, area protetta gestita dalla Città Metropolitana di Roma Capitale.</p>
+  <p class="crediti-mobile">Animazione 3D basata su <a href="https://github.com/venomez-viper/Bird-Song-Visualization-in-3D-" target="_blank" rel="noopener">Bird Song Visualization in 3D</a> di venomez-viper · Ispirazione che ha ampliato il progetto birdsongtech: <a href="https://www.lucioarese.net/portfolio_page/visual-birds/" target="_blank" rel="noopener">Visuals from bird songs</a> di Lucio Arese</p>
 </aside>
 
 <div id="avvio" class="nascosto"><button type="button" id="b-avvio">
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 4.5a5 5 0 0 0 0 7"/><path d="M3.2 2a9 9 0 0 0 0 12"/><path d="M8.8 6.6a2 2 0 0 0 0 2.8"/></svg>
   Ascolta e guarda il canto</button></div>
+
+<p id="crediti">Animazione 3D basata su <a href="https://github.com/venomez-viper/Bird-Song-Visualization-in-3D-" target="_blank" rel="noopener">Bird Song Visualization in 3D</a> di venomez-viper · Ispirazione che ha ampliato il progetto birdsongtech: <a href="https://www.lucioarese.net/portfolio_page/visual-birds/" target="_blank" rel="noopener">Visuals from bird songs</a> di Lucio Arese</p>
 
 <div id="fscale"><div id="cbar"></div><div id="flabels"></div></div>
 <div id="legenda">
@@ -503,6 +536,14 @@ $('b-play').addEventListener('click',()=>{
   suonaFile();
 });
 $('b-avvio').addEventListener('click',suonaFile);
+/* Sul telefono le istruzioni partono chiuse, per lasciare spazio alla scena */
+if(innerWidth<=720)$('istruzioni').open=false;
+/* Indietro: torna alla pagina precedente del sito, altrimenti alla home */
+$('indietro').addEventListener('click',e=>{
+  let stessoSito=false;
+  try{stessoSito=document.referrer&&new URL(document.referrer).host===location.host;}catch(_){}
+  if(stessoSito&&history.length>1){e.preventDefault();history.back();}
+});
 $('b-loop').addEventListener('click',e=>{
   const on=e.currentTarget.getAttribute('aria-pressed')!=='true';
   e.currentTarget.setAttribute('aria-pressed',String(on));
@@ -559,7 +600,8 @@ function harmonicScore(hz,domHz){
 /* ════════════════ Ciclo di disegno ════════════════ */
 const clock=new THREE.Clock();
 let sT=0;
-const ruota=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+let ruota=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+ctrl.addEventListener('start',()=>{ruota=false;});   // trascinando la scena si ferma la rotazione automatica
 function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),0.1);
