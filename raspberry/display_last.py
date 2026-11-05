@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 # Solo caratteri semplici: la console del display non mostra icone ed emoji.
 
 CSV_FILENAME = "/home/pi/log sistema di ascolto Birdsong Palude Torre Flavia.csv"
+RADIO_FILENAME = "/home/pi/radio.csv"     # qualita' del segnale, scritto da gateway.py
 SOGLIA = 80              # un file e' "valido" da questa affidabilita' (%) in su
 FINESTRA_MINUTI = 15     # i messaggi arrivati entro 15 minuti fanno parte della stessa ricezione
 LINEA = "=" * 36
@@ -23,6 +24,31 @@ def leggi_righe():
         return [r for r in righe[1:] if len(r) >= 3]    # salta l'intestazione e le righe incomplete
     except Exception:
         return []
+
+
+def segnale():
+    """SNR, RSSI e salti dell'ultimo messaggio BS1 ricevuto (da radio.csv)."""
+    if not os.path.exists(RADIO_FILENAME):
+        return None
+    try:
+        with open(RADIO_FILENAME, mode='r', newline='', encoding='utf-8') as file:
+            righe = [r for r in csv.DictReader(file) if r.get("tipo") in ("H", "D")]
+    except Exception:
+        return None
+    if not righe:
+        return None
+    r = righe[-1]
+    parti = []
+    if r.get("snr"):
+        try:
+            parti.append(f"SNR {float(r['snr']):.1f} dB")
+        except ValueError:
+            pass
+    if r.get("rssi"):
+        parti.append(f"RSSI {r['rssi']}")
+    if r.get("hop") != "":
+        parti.append(f"HOP {r['hop']}")
+    return "  ".join(parti)[:34] or None
 
 
 def data_ora(testo):
@@ -83,10 +109,11 @@ def riepilogo():
 
 def schermata():
     r = riepilogo()
-    righe = ["", LINEA, " birdsongtech Palude di Torre Flavia", LINEA, ""]
+    radio = segnale()
+    righe = [LINEA, " birdsongtech Palude di Torre Flavia", LINEA, ""]
     if r is None:
         righe += [" ULTIMA RICEZIONE:", " In attesa di dati...", "",
-                  " NODO MITTENTE:", " Nessun nodo", "",
+                  " NODO MITTENTE:", " Nessun nodo",
                   f" FILE VALIDI ({SOGLIA}% O PIU'):", " ---", "",
                   " BATTERIA STAZIONE: ---"]
     else:
@@ -95,9 +122,10 @@ def schermata():
         else:
             validi = f" {r['validi']} nell'ultima ricezione"
         righe += [" ULTIMA RICEZIONE:", f" {r['quando']}", "",
-                  " NODO MITTENTE:", f" {r['nodo']}", "",
+                  " NODO MITTENTE:", f" {r['nodo']}",
                   f" FILE VALIDI ({SOGLIA}% O PIU'):", validi, "",
                   f" BATTERIA STAZIONE: {r['batteria']}%" if r["batteria"] is not None else " BATTERIA STAZIONE: ---"]
+    righe += [" SEGNALE RADIO ULTIMO MESSAGGIO:", f" {radio}" if radio else " ---"]
     righe += [LINEA]
     return "\n".join(righe)
 

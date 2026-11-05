@@ -21,6 +21,7 @@ Dal Prompt dei comandi del PC, nella cartella `birdsong-backend`:
 cd "C:\Users\iz0qp\Desktop\birdsong\birdsong AI\birdsong-backend\raspberry"
 scp gateway.py specie.csv stazioni.csv pi@192.168.1.100:/home/pi/
 ssh pi@192.168.1.100 "sudo systemctl restart birdsong"
+```
 
 Si aggiornano **solo gli script**: driver LCD, `.bash_profile` e servizi restano come sono.
 
@@ -30,8 +31,10 @@ Per aggiornare anche il testo del display:
 scp display_last.py pi@192.168.1.100:/home/pi/
 ssh -t pi@192.168.1.100 "sudo systemctl restart birdsong-display"
 ```
+
 Il nuovo gateway scrive il registro grezzo nello stesso formato di prima, quindi il display continua a funzionare.
-```
+
+**Aggiornamento del 6 novembre 2026 (pagina Trasmissione dati).** Vanno copiati **tutti e due** gli script, `gateway.py` e `display_last.py`, e riavviati tutti e due i servizi. Il gateway ora scrive anche `radio.csv`; il display mostra una riga in più con SNR, RSSI e numero di salti dell'ultimo messaggio. Il display resta di 16 righe di solo testo: driver e impostazioni non cambiano.
 
 Per controllare che il gateway giri e vedere i messaggi in arrivo:
 
@@ -45,6 +48,7 @@ Per seguirli in diretta: `ssh pi@192.168.1.100 "journalctl -u birdsong -f"` (Ctr
 
 - `/home/pi/birdsong_log.csv`: un rilevamento per riga, nel formato che legge `pubblica.py`, con il nome del file audio atteso (`TF01_20261102_064512.wav`). È il file che scarica `aggiorna_birdsong.bat`.
 - `/home/pi/telemetria.csv`: batteria, temperatura, pressione e umidità inviate dalla stazione a ogni risveglio (due volte al giorno). Serve alla pagina Statistiche e anche questo lo scarica `aggiorna_birdsong.bat`.
+- `/home/pi/radio.csv`: qualità del collegamento LoRa. Una riga per ogni messaggio BS1 ricevuto (SNR, RSSI, numero di salti, ultimo ripetitore), per ogni telemetria Meshtastic della V4 (occupazione del canale, tempo di trasmissione, tempo di accensione, tensione) e per le statistiche della V3 della base (pacchetti ricevuti, con errori, duplicati, nodi visti). Non aggiunge nulla ai messaggi della stazione: sono dati che la radio misura già. Serve alla pagina Trasmissione dati e lo scarica `aggiorna_birdsong.bat`. Cresce di circa 100 kB al mese.
 - `/home/pi/log sistema di ascolto Birdsong Palude Torre Flavia.csv`: registro grezzo di tutti i messaggi di testo ricevuti (come prima).
 
 I doppioni (stesso canto ritrasmesso perché la conferma non era arrivata) vengono scartati.

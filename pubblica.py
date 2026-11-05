@@ -34,6 +34,7 @@ CARTELLA = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(CARTELLA, "birdsong_history.db")
 CSV_LOG = os.path.join(CARTELLA, "birdsong_log.csv")
 CSV_TELEMETRIA = os.path.join(CARTELLA, "telemetria.csv")      # telemetria dei risvegli, dal Raspberry
+CSV_RADIO = os.path.join(CARTELLA, "radio.csv")                # qualita' del collegamento LoRa, dal Raspberry
 CARTELLA_IMPORT = os.path.join(CARTELLA, "da_importare")       # qui copi i .wav scaricati dalla XIAO
 CARTELLA_IMPORTATI = os.path.join(CARTELLA_IMPORT, "_importati")  # i .wav gia' pubblicati finiscono qui
 CARTELLA_AUDIO = os.path.join(CARTELLA, "audio")                # audio pubblicati sul sito
@@ -63,7 +64,13 @@ BACKUP_PI_HOST = "pi@192.168.1.100"
 BACKUP_PI_CARTELLA = "/home/pi/birdsongtech_backup"
 # cosa copiare: audio (solo i file nuovi) + database, CSV, documenti, presentazione, verifiche
 BACKUP_CARTELLE = ["audio", "docs", "presentazione", "verifiche", "lotti"]
-BACKUP_FILE = ["birdsong_history.db", "birdsong_log.csv", "telemetria.csv"]
+BACKUP_FILE = ["birdsong_history.db", "birdsong_log.csv", "telemetria.csv", "radio.csv"]
+
+# ---- trasmissione dati (pagina trasmissione.html)
+PRESET_LORA = {"nome": "MEDIUM_FAST", "frequenza_mhz": 869.525, "banda_khz": 250, "velocita_kbps": 3.52,
+               "sf": 9, "snr_limite_db": -12.5}
+COLONNE_RADIO = ["timestamp", "nodo", "tipo", "snr", "rssi", "hop", "relay", "ch_util", "air_tx", "uptime_s",
+                 "batteria_perc", "tensione_v", "rx_tot", "rx_err", "rx_dup", "tx_tot", "nodi_online"]
 
 FORMATO_TS = "%Y-%m-%d %H:%M:%S"
 DURATA_MAX = 16  # secondi: durata massima dei .wav registrati dalla XIAO
@@ -132,6 +139,14 @@ def apri_database():
             file TEXT,
             importato TEXT,
             UNIQUE(id_rilevamento, revisore)
+        )""")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS radio (
+            timestamp TEXT NOT NULL, nodo TEXT NOT NULL, tipo TEXT NOT NULL,   -- H, D, TEL (stazione), BASE (Heltec V3)
+            snr REAL, rssi INTEGER, hop INTEGER, relay TEXT,
+            ch_util REAL, air_tx REAL, uptime_s INTEGER, batteria_perc INTEGER, tensione_v REAL,
+            rx_tot INTEGER, rx_err INTEGER, rx_dup INTEGER, tx_tot INTEGER, nodi_online INTEGER,
+            UNIQUE(timestamp, nodo, tipo)
         )""")
     col_tel = {r[1] for r in cur.execute("PRAGMA table_info(telemetria)")}
     for nome, tipo in {"ascolto_oggi_min": "INTEGER", "ascolto_ieri_min": "INTEGER", "modello": "TEXT"}.items():
@@ -506,6 +521,139 @@ def esporta_statistiche(conn):
         f.write("window.BIRDSONG_STAT = " + testo + ";\n")
     print(f"[OK] Statistiche: {len(uscita)} giorni")
 
+
+
+# ---------------------------------------------------------------- trasmissione dati (LoRa / Meshtastic)
+def importa_radio(conn):
+    """radio.csv (scritto da gateway.py sul Raspberry) -> tabella radio."""
+    if not os.path.exists(CSV_RADIO):
+        print("[i] radio.csv non trovato: nessun dato di trasmissione")
+        return 0
+    interi = {"rssi", "hop", "uptime_s", "batteria_perc", "rx_tot", "rx_err", "rx_dup", "tx_tot", "nodi_online"}
+    nuove = 0
+    cur = conn.cursor()
+    with open(CSV_RADIO, newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            if not r.get("timestamp") or not r.get("nodo") or not r.get("tipo"):
+                continue
+            valori = []
+            for c in COLONNE_RADIO:
+                v = (r.get(c) or "").strip()
+                if c in ("timestamp", "nodo", "tipo", "relay"):
+                    valori.append(v or None)
+                else:
+                    valori.append(numero(v, int if c in interi else float))
+            cur.execute(f"INSERT OR IGNORE INTO radio ({','.join(COLONNE_RADIO)}) VALUES ({','.join('?' * len(COLONNE_RADIO))})",
+                        valori)
+            nuove += cur.rowcount
+    conn.commit()
+    print(f"[OK] Trasmissione dati: {nuove} righe nuove da radio.csv")
+    return nuove
+
+
+def esporta_radio(conn):
+    """data/radio.js (riepiloghi giornalieri per i grafici) e data/radio/radio_AAAA-MM.csv (archivi mensili)."""
+    cur = conn.cursor()
+    righe = [dict(zip(COLONNE_RADIO, r)) for r in
+             cur.execute(f"SELECT {','.join(COLONNE_RADIO)} FROM radio ORDER BY timestamp")]
+    cartella = os.path.join(CARTELLA_DATI, "radio")
+    os.makedirs(cartella, exist_ok=True)
+
+    # archivi mensili, rigenerati ogni volta (sono piccoli)
+    mesi = {}
+    for r in righe:
+        mesi.setdefault(r["timestamp"][:7], []).append(r)
+    archivi = []
+    for mese, elenco in sorted(mesi.items()):
+        nome = f"radio_{mese}.csv"
+        with open(os.path.join(cartella, nome), "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(COLONNE_RADIO)
+            for r in elenco:
+                w.writerow(["" if r[c] is None else r[c] for c in COLONNE_RADIO])
+        archivi.append({"mese": mese, "file": f"data/radio/{nome}", "righe": len(elenco),
+                        "kb": round(os.path.getsize(os.path.join(cartella, nome)) / 1024, 1)})
+
+    def mediana(v):
+        v = sorted(v)
+        if not v:
+            return None
+        m = len(v) // 2
+        return round(v[m] if len(v) % 2 else (v[m - 1] + v[m]) / 2, 1)
+
+    giorni = {}
+
+    def giorno(d):
+        return giorni.setdefault(d, {"msg": 0, "snr": [], "rssi": [], "hop": [], "ch": [], "air": [],
+                                     "up": [], "riavvii": 0, "v": [], "bat": [], "base": []})
+
+    ultimo_uptime = {}
+    relay = {}
+    for r in righe:
+        g = giorno(r["timestamp"][:10])
+        if r["tipo"] in ("H", "D"):
+            g["msg"] += 1
+            if r["relay"]:
+                relay[r["relay"]] = relay.get(r["relay"], 0) + 1
+        if r["tipo"] in ("H", "D", "TEL"):
+            if r["snr"] is not None: g["snr"].append(r["snr"])
+            if r["rssi"] is not None: g["rssi"].append(r["rssi"])
+            if r["hop"] is not None: g["hop"].append(r["hop"])
+        if r["tipo"] == "TEL":
+            if r["ch_util"] is not None: g["ch"].append(r["ch_util"])
+            if r["air_tx"] is not None: g["air"].append(r["air_tx"])
+            if r["tensione_v"] is not None: g["v"].append(r["tensione_v"])
+            if r["batteria_perc"] is not None and r["batteria_perc"] <= 100: g["bat"].append(r["batteria_perc"])
+            if r["uptime_s"] is not None:
+                g["up"].append(r["uptime_s"])
+                prima = ultimo_uptime.get(r["nodo"])
+                if prima is not None and r["uptime_s"] < prima:
+                    g["riavvii"] += 1
+                ultimo_uptime[r["nodo"]] = r["uptime_s"]
+        if r["tipo"] == "BASE":
+            g["base"].append(r)
+
+    uscita = {}
+    ultimo_base = None
+    for d, g in sorted(giorni.items()):
+        base = {}
+        if g["base"]:
+            # contatori cumulativi della Heltec V3: differenza fra ultima lettura del giorno e la precedente
+            prima = ultimo_base or g["base"][0]
+            fine = g["base"][-1]
+            for c in ("rx_tot", "rx_err", "rx_dup"):
+                a, b = prima.get(c), fine.get(c)
+                if a is not None and b is not None:
+                    base[c] = b - a if b >= a else b     # contatore azzerato da un riavvio della base
+            base["ch_util"] = mediana([x["ch_util"] for x in g["base"] if x["ch_util"] is not None])
+            base["nodi"] = max((x["nodi_online"] for x in g["base"] if x["nodi_online"] is not None), default=None)
+            ultimo_base = fine
+        hop = {}
+        for h in g["hop"]:
+            hop[str(h)] = hop.get(str(h), 0) + 1
+        uscita[d] = {
+            "msg": g["msg"],
+            "snr_min": min(g["snr"]) if g["snr"] else None, "snr_med": mediana(g["snr"]),
+            "snr_max": max(g["snr"]) if g["snr"] else None,
+            "rssi_min": min(g["rssi"]) if g["rssi"] else None, "rssi_med": mediana(g["rssi"]),
+            "rssi_max": max(g["rssi"]) if g["rssi"] else None,
+            "hop_med": mediana(g["hop"]), "hop_max": max(g["hop"]) if g["hop"] else None, "hop": hop,
+            "ch_med": mediana(g["ch"]), "ch_max": max(g["ch"]) if g["ch"] else None,
+            "air_med": mediana(g["air"]), "air_max": max(g["air"]) if g["air"] else None,
+            "up_max_h": round(max(g["up"]) / 3600, 1) if g["up"] else None, "riavvii": g["riavvii"],
+            "v_min": min(g["v"]) if g["v"] else None, "v_max": max(g["v"]) if g["v"] else None,
+            "bat_min": min(g["bat"]) if g["bat"] else None,
+            "base": base or None,
+        }
+    recenti = [{k: r[k] for k in ("timestamp", "tipo", "snr", "rssi", "hop", "relay")}
+               for r in righe if r["tipo"] in ("H", "D")][-30:]
+    pacchetto = {"aggiornato": datetime.now().strftime(FORMATO_TS), "preset": PRESET_LORA, "giorni": uscita,
+                 "relay": dict(sorted(relay.items(), key=lambda x: -x[1])), "recenti": recenti[::-1],
+                 "archivi": archivi[::-1]}
+    testo = json.dumps(pacchetto, ensure_ascii=False, separators=(",", ":"))
+    with open(os.path.join(CARTELLA_DATI, "radio.js"), "w", encoding="utf-8") as f:
+        f.write("window.BIRDSONG_RADIO = " + testo + ";\n")
+    print(f"[OK] Trasmissione dati: {len(uscita)} giorni, {len(archivi)} archivi mensili")
 
 
 # ---------------------------------------------------------------- verifiche degli esperti
@@ -920,11 +1068,13 @@ if __name__ == "__main__":
     try:
         importa_log(conn)
         importa_telemetria(conn)
+        importa_radio(conn)
         importa_audio(conn)
         importa_verifiche(conn)
         carica_su_archive(conn)
         esporta_dati(conn)
         esporta_statistiche(conn)
+        esporta_radio(conn)
     finally:
         conn.close()
     backup_raspberry()

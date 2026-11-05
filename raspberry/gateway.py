@@ -24,6 +24,7 @@ CANALE = 0                                  # indice del canale birdsongtech (pr
 LOG_RILEVAMENTI = os.path.join(CARTELLA, "birdsong_log.csv")   # quello che scarica aggiorna_birdsong.bat
 LOG_GREZZO = os.path.join(CARTELLA, "log sistema di ascolto Birdsong Palude Torre Flavia.csv")
 LOG_TELEMETRIA = os.path.join(CARTELLA, "telemetria.csv")                # anche questo lo scarica aggiorna_birdsong.bat
+LOG_RADIO = os.path.join(CARTELLA, "radio.csv")                          # qualita' del collegamento LoRa (pagina Trasmissione dati)
 TAB_SPECIE = os.path.join(CARTELLA, "specie.csv")
 TAB_STAZIONI = os.path.join(CARTELLA, "stazioni.csv")
 ATTESA_CONFERMA = 8                         # secondi: raccoglie piu' messaggi D in un'unica conferma
@@ -34,6 +35,26 @@ COLONNE = ["timestamp", "nodo", "specie_ita", "specie_sci", "score_tinyml", "bat
            "modello", "campione"]
 COLONNE_TELEMETRIA = ["timestamp", "nodo", "batteria_perc", "batteria_mv", "temperatura", "pressione", "umidita",
                       "ascolto_oggi_min", "ascolto_ieri_min", "modello"]
+
+
+# Una riga per ogni pacchetto utile, senza traffico radio in piu':
+#  H / D  = messaggi BS1 della stazione (SNR, RSSI, salti, nodo ripetitore dell'ultimo salto)
+#  TEL    = telemetria Device Metrics che la V4 in campo invia da sola (canale occupato, tempo di trasmissione, uptime, batteria)
+#  BASE   = statistiche locali della Heltec V3 della base (pacchetti ricevuti, con errori, duplicati, nodi)
+COLONNE_RADIO = ["timestamp", "nodo", "tipo", "snr", "rssi", "hop", "relay", "ch_util", "air_tx", "uptime_s",
+                 "batteria_perc", "tensione_v", "rx_tot", "rx_err", "rx_dup", "tx_tot", "nodi_online"]
+
+
+def metadati_radio(packet):
+    """SNR, RSSI, numero di salti e nodo ripetitore di un pacchetto ricevuto."""
+    hop = ""
+    if packet.get("hopStart") is not None and packet.get("hopLimit") is not None:
+        hop = max(0, int(packet["hopStart"]) - int(packet["hopLimit"]))
+    relay = packet.get("relayNode")
+    return {
+        "snr": packet.get("rxSnr", ""), "rssi": packet.get("rxRssi", ""), "hop": hop,
+        "relay": f"..{int(relay) & 0xFF:02x}" if relay not in (None, "", 0) else "",
+    }
 
 
 def dieci(v):
@@ -252,23 +273,57 @@ def main():
 
     ricevitore = Ricevitore(invia)
 
+    stazioni_radio = set()      # id radio (!xxxxxxxx) che hanno mandato messaggi BS1: la loro telemetria interessa
+
+    def riga_radio(**campi):
+        riga = {"timestamp": f"{datetime.now():%Y-%m-%d %H:%M:%S}"}
+        riga.update(campi)
+        try:
+            scrivi_csv(LOG_RADIO, COLONNE_RADIO, [riga])
+        except OSError as e:
+            registra(f"[!] radio.csv: {e}")
+
     def on_receive(packet, interface):
         dec = packet.get("decoded", {})
-        if dec.get("portnum") != "TEXT_MESSAGE_APP":
+        porta = dec.get("portnum")
+        mittente = packet.get("fromId", "")
+        if porta == "TELEMETRY_APP":
+            tel = dec.get("telemetry", {})
+            dm, ls = tel.get("deviceMetrics"), tel.get("localStats")
+            mio = getattr(getattr(interface, "myInfo", None), "my_node_num", None)
+            if ls and packet.get("from") == mio:
+                riga_radio(nodo=mittente or "base", tipo="BASE", ch_util=ls.get("channelUtilization", ""),
+                           air_tx=ls.get("airUtilTx", ""), uptime_s=ls.get("uptimeSeconds", ""),
+                           rx_tot=ls.get("numPacketsRx", ""), rx_err=ls.get("numPacketsRxBad", ""),
+                           rx_dup=ls.get("numRxDupe", ""), tx_tot=ls.get("numPacketsTx", ""),
+                           nodi_online=ls.get("numOnlineNodes", ""))
+            elif dm and mittente in stazioni_radio:
+                riga_radio(nodo=mittente, tipo="TEL", **metadati_radio(packet),
+                           ch_util=dm.get("channelUtilization", ""), air_tx=dm.get("airUtilTx", ""),
+                           uptime_s=dm.get("uptimeSeconds", ""), batteria_perc=dm.get("batteryLevel", ""),
+                           tensione_v=dm.get("voltage", ""))
             return
-        testo, mittente = dec.get("text", ""), packet.get("fromId", "")
+        if porta != "TEXT_MESSAGE_APP":
+            return
+        testo = dec.get("text", "")
         registra(f"<- {mittente}: {testo}")
         try:
             scrivi_grezzo(mittente, testo)
         except OSError as e:
             registra(f"[!] log grezzo: {e}")
         if packet.get("channel", 0) == CANALE:
+            if testo.startswith("BS1 H") or testo.startswith("BS1 D"):
+                stazioni_radio.add(mittente)
+                riga_radio(nodo=mittente, tipo=testo[4], **metadati_radio(packet))
             ricevitore.gestisci(testo, mittente)
 
     def on_lost(interface=None):
         registra("[!] Collegamento con la Heltec perso: esco, systemd mi riavvia")
         os._exit(1)
 
+    if os.path.exists(LOG_RADIO):
+        with open(LOG_RADIO, newline="", encoding="utf-8") as f:
+            stazioni_radio.update(r["nodo"] for r in csv.DictReader(f) if r.get("tipo") in ("H", "D"))
     pub.subscribe(on_receive, "meshtastic.receive")
     pub.subscribe(on_lost, "meshtastic.connection.lost")
     registra(f"Connessione alla Heltec su {PORTA or 'porta automatica'}...")

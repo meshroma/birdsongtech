@@ -15,6 +15,7 @@ cd /d "%~dp0"
 set PI_HOST=pi@192.168.1.100
 set PI_LOG=/home/pi/birdsong_log.csv
 set PI_TELEMETRIA=/home/pi/telemetria.csv
+set PI_RADIO=/home/pi/radio.csv
 
 echo ============================================================
 echo   RETE BIOACUSTICA TORRE FLAVIA - AGGIORNAMENTO
@@ -36,6 +37,12 @@ if "%PI_HOST%"=="" (
         echo [!] Telemetria non scaricata: le statistiche useranno i dati gia' presenti.
     ) else (
         echo       Telemetria scaricata.
+    )
+    scp "%PI_HOST%:%PI_RADIO%" radio.csv
+    if errorlevel 1 (
+        echo [!] Dati radio non scaricati: la pagina Trasmissione dati usera' quelli gia' presenti.
+    ) else (
+        echo       Dati radio scaricati.
     )
 )
 echo.
@@ -60,6 +67,7 @@ echo.
 echo [4/4] Pubblicazione su GitHub
 git add data birdsong_history.db birdsong_log.csv
 if exist telemetria.csv git add telemetria.csv
+if exist radio.csv git add radio.csv
 git diff --cached --quiet
 if errorlevel 1 (
     git commit -q -m "Dati: aggiornamento del %date% %time:~0,5%"
