@@ -15,7 +15,7 @@ import csv
 import os
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ---------------------------------------------------------------- configurazione
 CARTELLA = os.path.dirname(os.path.abspath(__file__))
@@ -167,9 +167,16 @@ class Ricevitore:
         stazione = self.stazioni.get(sigla, {})
         nuovi = []
         for rec in filter(None, record.split(";")):
-            campi = (rec.split(",") + [""] * 7)[:7]
-            ts_compatto, codice, conf, temp10, pres10, umid, flag = [c.strip() for c in campi]
+            # rec = ts,CODICE,conf%,t×10,p×10,umid%[,flag[,inizio_file_hhmmss]]
+            campi = (rec.split(",") + [""] * 8)[:8]
+            ts_compatto, codice, conf, temp10, pres10, umid, flag, inizio = [c.strip() for c in campi]
             dt = datetime.strptime(ts_compatto, "%Y%m%d%H%M%S")
+            # piu' specie nello stesso file: l'ottavo campo dice quando e' iniziato il .wav (stesso giorno o il precedente)
+            dt_file = dt
+            if len(inizio) == 6 and inizio.isdigit():
+                dt_file = dt.replace(hour=int(inizio[:2]), minute=int(inizio[2:4]), second=int(inizio[4:]))
+                if dt_file > dt:
+                    dt_file -= timedelta(days=1)
             sp = self.specie.get(codice.upper())
             if sp is None:
                 registra(f"[!] codice specie sconosciuto {codice}: aggiungilo a specie.csv")
@@ -186,7 +193,7 @@ class Ricevitore:
                 "gps_lat": stazione.get("lat", ""),
                 "gps_lon": stazione.get("lon", ""),
                 "altitudine_mslm": stazione.get("quota", ""),
-                "file_audio": f"{sigla}_{dt:%Y%m%d}_{dt:%H%M%S}.wav",
+                "file_audio": f"{sigla}_{dt_file:%Y%m%d}_{dt_file:%H%M%S}.wav",
                 "modello": self.modello.get(stazione.get("nodo") or sigla, ""),
                 "campione": "1" if flag.lower() == "c" else "",
             }

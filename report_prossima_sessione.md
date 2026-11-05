@@ -47,6 +47,8 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
 
 ## Da fare
 
+**A ogni sessione:** aggiornare insieme sito, `docs` (con `docs/ORE_DI_LAVORO.md` e le immagini in `docs/sorgenti/`) e la presentazione in `presentazione/`.
+
 0. Creare su Aruba l'alias **riconoscimento-specie@birdsongtech.it**: lo usa il pulsante «Richiedi file CSV per valutazione» dell'archivio. Le richieste si gestiscono come spiegato in `docs/VERIFICHE.md` (`crea_lotto.bat`, cartella `verifiche\`).
 
 1. Copiare sul Raspberry `raspberry/gateway.py` (legge i nuovi campi del messaggio H: minuti di ascolto e versione del modello) e le tabelle aggiornate:
@@ -58,6 +60,7 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
    - firmware della XIAO:
      - ascolto, riconoscimento, coda, protocollo BS1, orari, nomi dei file;
      - scarico via Wi-Fi su richiesta e aggiornamento OTA;
+     - **modello a più etichette** (multi-label) e classificazione anche durante i 16 s: più specie nello stesso file, con l'ottavo campo del record `D`;
      - **campione di controllo**: 1 rilevamento su 10 tra il 50% e l'85%, con il campo `c`;
      - **minuti di ascolto** (oggi/ieri) e **versione del modello** nel messaggio H (vedi `docs/PROTOCOLLO_LORA.md`);
    - allineare `specie.csv` alle etichette del modello AI.

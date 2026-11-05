@@ -316,7 +316,7 @@
       const meteo = [r.temperatura != null ? `${r.temperatura} °C` : null, r.pressione != null ? `${r.pressione} hPa` : null].filter(Boolean).join(' · ') || '—';
       return `<tr>
         <td class="quando num">${dataBreve(r.data)}<small>ore ${ora(r.ora)}</small></td>
-        <td><span class="specie">${esc(r.specie)}</span><span class="sci">${esc(r.sci)}</span></td>
+        <td><span class="specie">${esc(r.specie)}</span><span class="sci">${esc(r.sci)}</span>${r.stesso_file && r.stesso_file.length ? `<span class="camp" title="Nella stessa registrazione: ${esc(r.stesso_file.map(x => x.specie).join(', '))}">+${r.stesso_file.length} ${r.stesso_file.length === 1 ? 'specie' : 'specie'} nello stesso file</span>` : ''}</td>
         <td data-t="Affidabilità">${confHTML(r.score)}${r.campione ? '<br><span class="camp" title="Salvato a caso per valutare il modello">campione di controllo</span>' : ''}${badgeVerifica(r)}</td>
         <td class="meteo" data-t="Meteo">${esc(meteo)}</td>
         <td>${bottoneAscolta(r)}</td>

@@ -48,6 +48,7 @@ Monitoraggio bioacustico automatico degli uccelli nel **Monumento Naturale Palud
 
 - Il visualizzatore 3D è basato su [Bird Song Visualization in 3D](https://github.com/venomez-viper/Bird-Song-Visualization-in-3D-) di venomez-viper, adattato per birdsongtech.
 - Ispirazione che ha ampliato il progetto: [Visuals from bird songs](https://www.lucioarese.net/portfolio_page/visual-birds/) di Lucio Arese.
+- Lo spettrogramma 2D del visualizzatore e le tabelle di selezione dei lotti di verifica seguono il formato di [Raven](https://www.ravensoundsoftware.com/), software del K. Lisa Yang Center for Conservation Bioacoustics, Cornell Lab of Ornithology.
 - Foto delle specie: autori vari, Wikimedia Commons, licenze indicate sotto ogni foto.
 - Elenco delle specie: Battisti C., Cento M., Fraticelli F., Hueting S., Muratore S. (2021), checklist dei vertebrati della ZPS Palude di Torre Flavia.
 - [three.js](https://threejs.org) (licenza MIT), [Leaflet](https://leafletjs.com) (BSD-2), mappe © contributori di OpenStreetMap.

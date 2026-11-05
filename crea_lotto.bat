@@ -17,6 +17,6 @@ if errorlevel 1 (
     exit /b 1
 )
 echo.
-echo Allega il file alla risposta. Il testo da incollare e' in docs\VERIFICHE.md
+echo Allega il file .zip alla risposta. Il testo da incollare e' in docs\VERIFICHE.md
 if exist lotti start "" lotti
 pause

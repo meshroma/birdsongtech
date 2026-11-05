@@ -114,7 +114,7 @@ def apri_database():
         )""")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS verifiche (
-            id_rilevamento TEXT NOT NULL,     -- come chiave_record(): 20261105-064512-TORRE-FLAVIA-01
+            id_rilevamento TEXT NOT NULL,     -- come chiave_record(): 20261105-064512-TORRE-FLAVIA-01-ERIRUB
             revisore TEXT NOT NULL,           -- nome pubblico, oppure "revisore anonimo #xxxx" senza consenso
             ente TEXT,
             citato INTEGER,                   -- 1 = ha dato il consenso a comparire sul sito
@@ -215,11 +215,27 @@ def importa_telemetria(conn):
 
 
 # ---------------------------------------------------------------- audio
-def chiave_record(ts, nodo):
-    """Identificativo stabile del rilevamento, usato nei link e nei nomi dei file."""
+_CODICI = None
+
+
+def codice_specie(sci, nome=""):
+    """Codice di 6 lettere della specie (da raspberry/specie.csv), oppure il nome ripulito."""
+    global _CODICI
+    if _CODICI is None:
+        _CODICI = {}
+        if os.path.exists(TAB_SPECIE):
+            with open(TAB_SPECIE, newline="", encoding="utf-8-sig") as f:
+                for r in csv.DictReader(f):
+                    _CODICI[r["nome_sci"].strip().lower()] = r["codice"].strip().upper()
+    return _CODICI.get((sci or "").strip().lower()) or re.sub(r"[^A-Za-z0-9]+", "", (nome or sci or "X")).upper()[:10]
+
+
+def chiave_record(ts, nodo, sci="", specie=""):
+    """Identificativo stabile del rilevamento, usato nei link e nelle verifiche.
+    Comprende la specie, perche' piu' specie possono essere riconosciute nello stesso istante e nello stesso file."""
     dt = datetime.strptime(ts, FORMATO_TS)
     nodo_pulito = re.sub(r"[^A-Za-z0-9]+", "-", nodo).strip("-")
-    return f"{dt:%Y%m%d-%H%M%S}-{nodo_pulito}"
+    return f"{dt:%Y%m%d-%H%M%S}-{nodo_pulito}-{codice_specie(sci, specie)}"
 
 
 def varianti_timestamp(ts):
@@ -249,22 +265,26 @@ def importa_audio(conn):
     cur = conn.cursor()
     cur.execute("SELECT id, timestamp, nodo, file_audio FROM rilevamenti_bioacustici")
     righe = cur.fetchall()
-    per_nome = {r[3].lower(): r for r in righe if r[3]}
+    per_nome = {}
+    for r in righe:
+        if r[3]:
+            per_nome.setdefault(r[3].lower(), []).append(r)
 
     associati, orfani = 0, []
     for nome in sorted(wav):
-        riga = per_nome.get(nome.lower())
-        if riga is None:  # nessun nome esplicito nel log: cerco il timestamp nel nome del file
+        gruppo = per_nome.get(nome.lower())
+        if not gruppo:  # nessun nome esplicito nel log: cerco il timestamp nel nome del file
             candidati = [r for r in righe if any(v in nome for v in varianti_timestamp(r[1]))]
-            if len(candidati) > 1:  # stesso istante su piu' nodi: uso il nodo nel nome del file
-                candidati = [r for r in candidati if r[2].lower() in nome.lower()] or candidati[:1]
-            riga = candidati[0] if candidati else None
-        if riga is None:
+            if len({r[2] for r in candidati}) > 1:  # stesso istante su piu' nodi: uso il nodo nel nome del file
+                candidati = [r for r in candidati if r[2].lower() in nome.lower()] or candidati
+            gruppo = candidati
+        if not gruppo:
             orfani.append(nome)
             continue
-        rid, ts, nodo, _ = riga
+        # un file puo' contenere piu' specie: tutti i rilevamenti del gruppo puntano allo stesso .wav
+        ts = min(r[1] for r in gruppo)
         dt = datetime.strptime(ts, FORMATO_TS)
-        rel = f"audio/{dt:%Y}/{dt:%m}/{chiave_record(ts, nodo)}.wav"
+        rel = f"audio/{dt:%Y}/{dt:%m}/{os.path.splitext(nome)[0]}.wav"
         dest = os.path.join(CARTELLA, *rel.split("/"))
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         sorgente = os.path.join(CARTELLA_IMPORT, nome)
@@ -274,9 +294,10 @@ def importa_audio(conn):
         shutil.copy2(sorgente, dest)
         os.makedirs(CARTELLA_IMPORTATI, exist_ok=True)
         shutil.move(sorgente, os.path.join(CARTELLA_IMPORTATI, nome))
-        cur.execute("UPDATE rilevamenti_bioacustici SET audio_locale=? WHERE id=?", (rel, rid))
+        for r in gruppo:
+            cur.execute("UPDATE rilevamenti_bioacustici SET audio_locale=? WHERE id=?", (rel, r[0]))
         associati += 1
-        print(f"    ♪ {nome}  ->  {rel}")
+        print(f"    ♪ {nome}  ->  {rel}" + (f"  ({len(gruppo)} specie)" if len(gruppo) > 1 else ""))
     conn.commit()
     print(f"[OK] Audio: {associati} file aggiunti all'archivio locale")
     if orfani:
@@ -316,8 +337,8 @@ def carica_su_archive(conn):
     if MODO_LOCALE or not ARCHIVE_ATTIVO:
         return 0
     cur = conn.cursor()
-    cur.execute("""SELECT id, timestamp, audio_locale FROM rilevamenti_bioacustici
-                   WHERE audio_locale IS NOT NULL AND audio_url IS NULL ORDER BY timestamp""")
+    cur.execute("""SELECT MIN(id), MIN(timestamp), audio_locale FROM rilevamenti_bioacustici
+                   WHERE audio_locale IS NOT NULL AND audio_url IS NULL GROUP BY audio_locale ORDER BY MIN(timestamp)""")
     da_caricare = cur.fetchall()
     if not da_caricare:
         print("[OK] Internet Archive: nessun file da caricare")
@@ -352,7 +373,7 @@ def carica_su_archive(conn):
             continue
         # /cors/ restituisce il file con l'intestazione CORS necessaria al player 3D
         url = f"https://archive.org/cors/{item}/{nome}"
-        cur.execute("UPDATE rilevamenti_bioacustici SET audio_url=? WHERE id=?", (url, rid))
+        cur.execute("UPDATE rilevamenti_bioacustici SET audio_url=? WHERE audio_locale=?", (url, locale))
         conn.commit()
         caricati += 1
         print(f"    ↑ {nome}  ->  archive.org/details/{item}")
@@ -480,7 +501,8 @@ def esporta_statistiche(conn):
 
 
 # ---------------------------------------------------------------- verifiche degli esperti
-COLONNE_LOTTO = ["id", "data", "ora", "specie", "nome_scientifico", "affidabilita", "motivo", "ascolta_audio", "ascolta_3d",
+COLONNE_LOTTO = ["id", "data", "ora", "specie", "nome_scientifico", "affidabilita", "motivo", "altre_specie_nel_file",
+                 "ascolta_audio", "ascolta_3d",
                  "verifica", "specie_corretta", "note", "revisore", "ente", "citami"]
 
 
@@ -535,7 +557,8 @@ def importa_verifiche(conn):
         return 0
     import hashlib
     cur = conn.cursor()
-    esistenti = {chiave_record(ts, nodo) for ts, nodo in cur.execute("SELECT timestamp, nodo FROM rilevamenti_bioacustici")}
+    esistenti = {chiave_record(ts, nodo, sci, sp) for ts, nodo, sp, sci in
+                 cur.execute("SELECT timestamp, nodo, specie_ita, specie_sci FROM rilevamenti_bioacustici")}
     nuove = 0
     for nome in sorted(os.listdir(CARTELLA_VERIFICHE)):
         if not nome.lower().endswith((".csv", ".xlsx")) or nome.startswith("~$"):
@@ -608,12 +631,15 @@ def crea_lotto(conn, quanti):
     voti = stato_verifiche(conn)
     righe = list(conn.execute("""SELECT timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, campione
                                  FROM rilevamenti_bioacustici WHERE audio_url LIKE 'http%'"""))
+    per_file = {}
+    for r in righe:
+        per_file.setdefault(r[5], []).append(r[2])
     conta = {}
     for r in righe:
         conta[r[2]] = conta.get(r[2], 0) + 1
     candidati = []
     for ts, nodo, sp, sci, score, url, camp in righe:
-        idr = chiave_record(ts, nodo)
+        idr = chiave_record(ts, nodo, sci, sp)
         gia = voti.get(idr, {})
         if gia.get("ok", 0) + gia.get("errato", 0) >= 2:
             continue
@@ -629,23 +655,92 @@ def crea_lotto(conn, quanti):
             prio, motivo = 4, "controllo a campione"
         if gia:
             prio += 0.5                                     # gia' verificato da un revisore: dopo gli altri
-        candidati.append((prio, random.random(), idr, ts, sp, sci, score, url, motivo))
+        altre = ", ".join(sorted(set(x for x in per_file.get(url, []) if x != sp)))
+        candidati.append((prio, random.random(), idr, ts, sp, sci, score, url, motivo, altre))
     if not candidati:
         print("[!] Nessun canto con audio pubblicato da verificare.")
         return None
     candidati.sort()
     scelti = sorted(candidati[:quanti], key=lambda c: c[3])
-    os.makedirs(CARTELLA_LOTTI, exist_ok=True)
-    nome = os.path.join(CARTELLA_LOTTI, f"lotto_{datetime.now():%Y%m%d_%H%M}.csv")
+    base = f"lotto_{datetime.now():%Y%m%d_%H%M}"
+    cartella = os.path.join(CARTELLA_LOTTI, base)
+    os.makedirs(cartella, exist_ok=True)
+    nome = os.path.join(cartella, base + ".csv")
     with open(nome, "w", newline="", encoding="utf-8-sig") as f:   # ; e BOM: si apre bene con Excel in italiano
         w = csv.writer(f, delimiter=";")
         w.writerow(COLONNE_LOTTO)
-        for _, _, idr, ts, sp, sci, score, url, motivo in scelti:
-            w.writerow([idr, ts[:10], ts[11:], sp, sci, f"{round((score or 0) * 100)}%", motivo, url,
+        for _, _, idr, ts, sp, sci, score, url, motivo, altre in scelti:
+            w.writerow([idr, ts[:10], ts[11:], sp, sci, f"{round((score or 0) * 100)}%", motivo, altre, url,
                         f"{SITO}player.html?id={idr}", "", "", "", "", "", ""])
-    print(f"[OK] Lotto creato: {nome}  ({len(scelti)} canti)")
-    print("     Allegalo alla risposta: il testo da usare e' in docs/VERIFICHE.md")
-    return nome
+    n_tab, n_wav = selezioni_raven(conn, cartella, {c[7] for c in scelti})
+    with open(os.path.join(cartella, "LEGGIMI.txt"), "w", encoding="utf-8") as f:
+        f.write(TESTO_LEGGIMI_LOTTO)
+    zip_nome = shutil.make_archive(os.path.join(CARTELLA_LOTTI, base), "zip", cartella)
+    print(f"[OK] Lotto creato: {zip_nome}")
+    print(f"     {len(scelti)} canti, {n_tab} tabelle di selezione Raven" + (f", {n_wav} file audio inclusi" if n_wav else ", audio da scaricare dai link"))
+    print("     Allega il file .zip alla risposta: il testo da usare e' in docs/VERIFICHE.md")
+    return zip_nome
+
+
+FINESTRA_MODELLO = 3.0      # secondi analizzati dal modello per ogni rilevamento (riquadro nelle tabelle Raven)
+LIMITE_ZIP_MB = 20          # oltre questa dimensione i .wav non vengono messi nel lotto (limite degli allegati email)
+TESTO_LEGGIMI_LOTTO = """birdsongtech - lotto di canti da verificare
+Monumento Naturale Palude di Torre Flavia
+
+Contenuto:
+- lotto_....csv            i canti da verificare: si apre con Excel o LibreOffice
+- selezioni_raven/         una tabella di selezione per ogni file audio, nel formato di Raven
+                           (K. Lisa Yang Center for Conservation Bioacoustics, Cornell Lab of Ornithology)
+- audio/                   i file .wav, se ci stavano nell'allegato (altrimenti si scaricano dai link del CSV)
+
+Con Raven: aprire il file .wav e poi la tabella con lo stesso nome (File > Open Selection Table).
+I riquadri mostrano dove il modello ha riconosciuto ogni specie (finestra di 3 secondi).
+
+Per ogni riga del CSV scrivere in "verifica": si / no / ?   (istruzioni complete nella email)
+Grazie!
+"""
+
+
+def selezioni_raven(conn, cartella, url_scelti):
+    """Per ogni file audio del lotto scrive <nome>.Table.1.selections.txt (formato Raven, separato da tabulazioni)
+    con tutti i rilevamenti del file; se lo spazio basta copia anche i .wav dall'archivio locale."""
+    righe = list(conn.execute("""SELECT timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, audio_locale, file_audio
+                                 FROM rilevamenti_bioacustici WHERE audio_url IS NOT NULL ORDER BY timestamp"""))
+    per_url = {}
+    for r in righe:
+        if r[5] in url_scelti:
+            per_url.setdefault(r[5], []).append(r)
+    dir_sel = os.path.join(cartella, "selezioni_raven")
+    os.makedirs(dir_sel, exist_ok=True)
+    wav_da_copiare = []
+    for url, gruppo in per_url.items():
+        nome_wav = gruppo[0][7] or os.path.basename(url)
+        base = os.path.splitext(nome_wav)[0]
+        m = re.search(r"(\d{8})_(\d{6})", nome_wav)
+        inizio = datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S") if m else datetime.strptime(gruppo[0][0], FORMATO_TS)
+        with open(os.path.join(dir_sel, f"{base}.Table.1.selections.txt"), "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f, delimiter="\t")
+            w.writerow(["Selection", "View", "Channel", "Begin Time (s)", "End Time (s)", "Low Freq (Hz)", "High Freq (Hz)",
+                        "Specie", "Nome scientifico", "Affidabilita (%)", "ID"])
+            for k, (ts, nodo, sp, sci, score, _, _, _) in enumerate(gruppo, start=1):
+                t0 = max(0.0, (datetime.strptime(ts, FORMATO_TS) - inizio).total_seconds())
+                t1 = min(t0 + FINESTRA_MODELLO, DURATA_MAX)
+                w.writerow([k, "Spectrogram 1", 1, f"{t0:.3f}", f"{t1:.3f}", 0, 12000, sp, sci,
+                            round((score or 0) * 100), chiave_record(ts, nodo, sci, sp)])
+        locale = gruppo[0][6]
+        if locale and os.path.exists(os.path.join(CARTELLA, *locale.split("/"))):
+            wav_da_copiare.append((os.path.join(CARTELLA, *locale.split("/")), nome_wav))
+    n_wav = 0
+    totale = sum(os.path.getsize(p) for p, _ in wav_da_copiare)
+    if wav_da_copiare and totale <= LIMITE_ZIP_MB * 1024 * 1024:
+        os.makedirs(os.path.join(cartella, "audio"), exist_ok=True)
+        for p, nome_wav in wav_da_copiare:
+            shutil.copy2(p, os.path.join(cartella, "audio", nome_wav))
+            n_wav += 1
+    elif wav_da_copiare:
+        print(f"     [i] audio non inclusi: {totale / 1048576:.0f} MB superano il limite di {LIMITE_ZIP_MB} MB "
+              f"(riduci QUANTI in crea_lotto.bat oppure il revisore li scarica dai link)")
+    return len(per_url), n_wav
 
 
 # ---------------------------------------------------------------- export per il sito
@@ -653,11 +748,11 @@ def esporta_dati(conn):
     cur = conn.cursor()
     cur.execute("""
         SELECT timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, audio_locale, batteria_perc,
-               temperatura, pressione, gps_lat, gps_lon, altitudine_mslm, modello, campione
+               temperatura, pressione, gps_lat, gps_lon, altitudine_mslm, modello, campione, file_audio
         FROM rilevamenti_bioacustici ORDER BY timestamp DESC""")
     rilevamenti, nodi, in_attesa = [], {}, 0
     voti = stato_verifiche(conn)
-    for (ts, nodo, specie, sci, score, url, locale, bat, temp, pres, lat, lon, alt, modello, campione) in cur.fetchall():
+    for (ts, nodo, specie, sci, score, url, locale, bat, temp, pres, lat, lon, alt, modello, campione, file_wav) in cur.fetchall():
         if MODO_LOCALE:  # prova sul PC: file della cartella audio/
             audio = locale if locale and os.path.exists(os.path.join(CARTELLA, *locale.split("/"))) else None
         else:            # sito pubblico: solo i file gia' su archive.org
@@ -667,7 +762,8 @@ def esporta_dati(conn):
             continue
         data, ora = ts.split(" ")
         rilevamenti.append({
-            "id": chiave_record(ts, nodo), "data": data, "ora": ora, "nodo": nodo,
+            "id": chiave_record(ts, nodo, sci, specie), "data": data, "ora": ora, "nodo": nodo,
+            "file": file_wav or locale or url,
             "specie": specie, "sci": sci, "score": round(score, 3), "audio": audio,
             "batteria": bat, "temperatura": temp, "pressione": pres,
             "lat": lat, "lon": lon, "quota": alt,
@@ -682,6 +778,16 @@ def esporta_dati(conn):
         n["rilevamenti"] += 1
         if n["lat"] is None and lat is not None and lon is not None:
             n["lat"], n["lon"] = lat, lon
+
+    # piu' specie nello stesso file audio: ogni rilevamento elenca le altre
+    gruppi = {}
+    for r in rilevamenti:
+        if r["file"]:
+            gruppi.setdefault((r["nodo"], r["file"]), []).append(r)
+    for r in rilevamenti:
+        altri = [x for x in gruppi.get((r["nodo"], r["file"]), []) if x is not r]
+        if altri:
+            r["stesso_file"] = [{"id": x["id"], "specie": x["specie"], "ora": x["ora"]} for x in sorted(altri, key=lambda x: x["ora"])]
 
     for n in nodi.values():
         if n["lat"] is None:
