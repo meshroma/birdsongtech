@@ -47,13 +47,19 @@ Da leggere per primo quando si riprende il lavoro. Dettagli in `README.md`, `doc
 
 ## Da fare
 
-1. Copiare sul Raspberry le tabelle aggiornate:
-   `scp raspberry\stazioni.csv raspberry\specie.csv pi@192.168.1.100:/home/pi/`, poi `ssh -t pi@192.168.1.100 "sudo systemctl restart birdsong"`.
+0. Creare su Aruba l'alias **riconoscimento-specie@birdsongtech.it**: lo usa il pulsante «Richiedi file CSV per valutazione» dell'archivio.
+
+1. Copiare sul Raspberry `raspberry/gateway.py` (legge i nuovi campi del messaggio H: minuti di ascolto e versione del modello) e le tabelle aggiornate:
+   `scp raspberry\gateway.py raspberry\stazioni.csv raspberry\specie.csv pi@192.168.1.100:/home/pi/`, poi `ssh -t pi@192.168.1.100 "sudo systemctl restart birdsong"`.
 2. Account su archive.org, poi `pip install internetarchive` e `ia configure`. La prima volta conviene provare con `ARCHIVE_PROVA = True` in `pubblica.py`.
 3. **Quando arriva la XIAO:**
    - prova della seriale TEXTMSG tra V4 e PC (sezione 1 di `docs/PROTOCOLLO_LORA.md`);
    - prova dal telefono dei messaggi `BS1 H` e `BS1 D`, poi cancellare il rilevamento di prova sul Pi;
-   - firmware della XIAO: ascolto, riconoscimento, coda, protocollo BS1, orari, nomi dei file, scarico via Wi-Fi su richiesta e aggiornamento OTA;
+   - firmware della XIAO:
+     - ascolto, riconoscimento, coda, protocollo BS1, orari, nomi dei file;
+     - scarico via Wi-Fi su richiesta e aggiornamento OTA;
+     - **campione di controllo**: 1 rilevamento su 10 tra il 50% e l'85%, con il campo `c`;
+     - **minuti di ascolto** (oggi/ieri) e **versione del modello** nel messaggio H (vedi `docs/PROTOCOLLO_LORA.md`);
    - allineare `specie.csv` alle etichette del modello AI.
 4. Durante il test, l'INA219 misura consumi e carica reali. Dopo una settimana di dati:
    - aggiornare il bilancio energetico;

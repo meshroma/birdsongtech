@@ -27,7 +27,7 @@ import re
 import shutil
 import sqlite3
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ---------------------------------------------------------------- configurazione
 CARTELLA = os.path.dirname(os.path.abspath(__file__))
@@ -85,6 +85,8 @@ def apri_database():
         "file_audio": "TEXT",    # nome del .wav sulla XIAO (facoltativo nel CSV)
         "audio_locale": "TEXT",  # percorso nell'archivio locale audio/AAAA/MM/...
         "umidita": "REAL",       # umidita' relativa % (scheda ambientale)
+        "modello": "TEXT",       # versione del modello di riconoscimento sulla XIAO
+        "campione": "INTEGER",   # 1 = campione di controllo casuale sotto la soglia di salvataggio
     }
     for nome, tipo in nuove.items():
         if nome not in colonne:
@@ -105,6 +107,10 @@ def apri_database():
             umidita REAL,
             UNIQUE(timestamp, nodo)
         )""")
+    col_tel = {r[1] for r in cur.execute("PRAGMA table_info(telemetria)")}
+    for nome, tipo in {"ascolto_oggi_min": "INTEGER", "ascolto_ieri_min": "INTEGER", "modello": "TEXT"}.items():
+        if nome not in col_tel:
+            cur.execute(f"ALTER TABLE telemetria ADD COLUMN {nome} {tipo}")
     conn.commit()
     return conn
 
@@ -149,12 +155,13 @@ def importa_log(conn):
             cur.execute("""
                 INSERT INTO rilevamenti_bioacustici
                 (timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, batteria_perc,
-                 temperatura, pressione, umidita, gps_lat, gps_lon, altitudine_mslm, file_audio)
-                VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                 temperatura, pressione, umidita, gps_lat, gps_lon, altitudine_mslm, file_audio, modello, campione)
+                VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (ts, nodo, specie, row.get("specie_sci", ""), numero(row.get("score_tinyml")) or 0.0,
                  numero(row.get("batteria_perc"), int), numero(row.get("temperatura")),
                  numero(row.get("pressione")), numero(row.get("umidita")), numero(row.get("gps_lat")),
-                 numero(row.get("gps_lon")), numero(row.get("altitudine_mslm")), row.get("file_audio") or None))
+                 numero(row.get("gps_lon")), numero(row.get("altitudine_mslm")), row.get("file_audio") or None,
+                 row.get("modello") or None, 1 if row.get("campione") == "1" else None))
             nuovi += 1
             print(f"    + {ts}  {nodo}  {specie}")
     conn.commit()
@@ -176,10 +183,13 @@ def importa_telemetria(conn):
             except ValueError:
                 continue
             cur.execute("""INSERT OR IGNORE INTO telemetria
-                (timestamp, nodo, batteria_perc, batteria_mv, temperatura, pressione, umidita)
-                VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (timestamp, nodo, batteria_perc, batteria_mv, temperatura, pressione, umidita,
+                 ascolto_oggi_min, ascolto_ieri_min, modello)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (ts, nodo, numero(row.get("batteria_perc"), int), numero(row.get("batteria_mv"), int),
-                 numero(row.get("temperatura")), numero(row.get("pressione")), numero(row.get("umidita"))))
+                 numero(row.get("temperatura")), numero(row.get("pressione")), numero(row.get("umidita")),
+                 numero(row.get("ascolto_oggi_min"), int), numero(row.get("ascolto_ieri_min"), int),
+                 (row.get("modello") or "").strip() or None))
             nuovi += cur.rowcount
     conn.commit()
     print(f"[OK] Telemetria: {nuovi} misure nuove")
@@ -414,8 +424,19 @@ def esporta_statistiche(conn):
         if bat is not None: g["b"].append((ts, bat))
         r = punto_rugiada(t, u)
         if r is not None: g["r"].append(r)
-    for ts, score in cur.execute("SELECT timestamp, score_tinyml FROM rilevamenti_bioacustici"):
-        if (score or 0) >= SOGLIA_VALIDI - 1e-9:
+    # minuti di ascolto: il massimo fra i valori "oggi" del giorno e il totale "ieri" mandato il giorno dopo
+    ascolto = {}
+    for ts, oggi, ieri in cur.execute("SELECT timestamp, ascolto_oggi_min, ascolto_ieri_min FROM telemetria"):
+        d = ts[:10]
+        if oggi is not None:
+            ascolto[d] = max(ascolto.get(d, 0), oggi)
+        if ieri is not None:
+            prima = (datetime.strptime(d, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+            ascolto[prima] = max(ascolto.get(prima, 0), ieri)
+    for d in ascolto:
+        giorno(d)
+    for ts, score, campione in cur.execute("SELECT timestamp, score_tinyml, campione FROM rilevamenti_bioacustici"):
+        if (score or 0) >= SOGLIA_VALIDI - 1e-9 and not campione:   # i campioni di controllo non contano
             giorno(ts[:10])["canti"] += 1
 
     media = lambda v: round(sum(v) / len(v), 1) if v else None
@@ -429,6 +450,8 @@ def esporta_statistiche(conn):
             "p_med": media(g["p"]),
             "r_med": media(g["r"]),
             "b_min": min(b) if b else None, "b_max": max(b) if b else None, "b_ult": b[-1] if b else None,
+            "ascolto_min": min(ascolto[d], 1440) if d in ascolto else None,
+            "canti_ora": round(g["canti"] / (ascolto[d] / 60), 2) if ascolto.get(d) else None,
         }
     pacchetto = {"aggiornato": datetime.now().strftime(FORMATO_TS), "soglia": SOGLIA_VALIDI, "giorni": uscita}
     testo = json.dumps(pacchetto, ensure_ascii=False, separators=(",", ":"))
@@ -442,10 +465,10 @@ def esporta_dati(conn):
     cur = conn.cursor()
     cur.execute("""
         SELECT timestamp, nodo, specie_ita, specie_sci, score_tinyml, audio_url, audio_locale, batteria_perc,
-               temperatura, pressione, gps_lat, gps_lon, altitudine_mslm
+               temperatura, pressione, gps_lat, gps_lon, altitudine_mslm, modello, campione
         FROM rilevamenti_bioacustici ORDER BY timestamp DESC""")
     rilevamenti, nodi, in_attesa = [], {}, 0
-    for (ts, nodo, specie, sci, score, url, locale, bat, temp, pres, lat, lon, alt) in cur.fetchall():
+    for (ts, nodo, specie, sci, score, url, locale, bat, temp, pres, lat, lon, alt, modello, campione) in cur.fetchall():
         if MODO_LOCALE:  # prova sul PC: file della cartella audio/
             audio = locale if locale and os.path.exists(os.path.join(CARTELLA, *locale.split("/"))) else None
         else:            # sito pubblico: solo i file gia' su archive.org
@@ -459,6 +482,7 @@ def esporta_dati(conn):
             "specie": specie, "sci": sci, "score": round(score, 3), "audio": audio,
             "batteria": bat, "temperatura": temp, "pressione": pres,
             "lat": lat, "lon": lon, "quota": alt,
+            "modello": modello, "campione": bool(campione),
         })
         n = nodi.setdefault(nodo, {"nodo": nodo, "rilevamenti": 0, "ultimo": ts, "ultima_specie": specie,
                                    "batteria": bat, "lat": None, "lon": None, "quota": alt})

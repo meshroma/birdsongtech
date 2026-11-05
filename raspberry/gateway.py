@@ -30,8 +30,10 @@ ATTESA_CONFERMA = 8                         # secondi: raccoglie piu' messaggi D
 MITTENTI_AUTORIZZATI = []                   # es. ["!a1b2c3d4"]; vuoto = tutti quelli del canale privato
 
 COLONNE = ["timestamp", "nodo", "specie_ita", "specie_sci", "score_tinyml", "batteria_perc",
-           "temperatura", "pressione", "umidita", "gps_lat", "gps_lon", "altitudine_mslm", "file_audio"]
-COLONNE_TELEMETRIA = ["timestamp", "nodo", "batteria_perc", "batteria_mv", "temperatura", "pressione", "umidita"]
+           "temperatura", "pressione", "umidita", "gps_lat", "gps_lon", "altitudine_mslm", "file_audio",
+           "modello", "campione"]
+COLONNE_TELEMETRIA = ["timestamp", "nodo", "batteria_perc", "batteria_mv", "temperatura", "pressione", "umidita",
+                      "ascolto_oggi_min", "ascolto_ieri_min", "modello"]
 
 
 def dieci(v):
@@ -89,6 +91,7 @@ class Ricevitore:
         self.specie = leggi_tabella(TAB_SPECIE, "codice")
         self.stazioni = leggi_tabella(TAB_STAZIONI, "sigla")
         self.gia_scritti = self._carica_esistenti()
+        self.modello = self._ultimo_modello()  # sigla/nodo -> versione del modello di riconoscimento
         self.da_confermare = {}               # sigla stazione -> set di numeri di sequenza
         self.timer = None
         self.lock = threading.Lock()
@@ -100,6 +103,16 @@ class Ricevitore:
                 for r in csv.DictReader(f):
                     visti.add((r.get("timestamp"), r.get("nodo"), r.get("specie_ita")))
         return visti
+
+    def _ultimo_modello(self):
+        """Ultima versione del modello comunicata da ogni stazione (sopravvive ai riavvii del gateway)."""
+        ultimo = {}
+        if os.path.exists(LOG_TELEMETRIA):
+            with open(LOG_TELEMETRIA, newline="", encoding="utf-8") as f:
+                for r in csv.DictReader(f):
+                    if (r.get("modello") or "").strip():
+                        ultimo[r.get("nodo")] = r["modello"].strip()
+        return ultimo
 
     # ---- ingresso
     def gestisci(self, testo, mittente=""):
@@ -125,17 +138,24 @@ class Ricevitore:
         return True
 
     def _ciao(self, parti):
-        # BS1 H <stazione> <batteria%> <mV> <in_coda> [<temperatura×10> <pressione×10> <umidita%>]
+        # BS1 H <stazione> <batteria%> <mV> <in_coda> [<t×10> <p×10> <umid%> <ascolto_oggi_min> <ascolto_ieri_min> <modello>]
+        # un valore mancante in mezzo si scrive "-"
         sigla = parti[2].upper()
-        campi = (" ".join(parti[3:]).split() + [""] * 6)[:6]
-        bat, mv, coda, t10, p10, umid = campi
-        registra(f"Risveglio di {sigla}: batteria {bat}% ({mv} mV), in coda {coda or 0}")
+        campi = (" ".join(parti[3:]).split() + [""] * 9)[:9]
+        bat, mv, coda, t10, p10, umid, asc_oggi, asc_ieri, modello = campi
+        modello = "" if modello == "-" else modello
+        registra(f"Risveglio di {sigla}: batteria {bat}% ({mv} mV), in coda {coda or 0}"
+                 + (f", ascolto oggi {asc_oggi} min" if intero(asc_oggi) else "") + (f", modello {modello}" if modello else ""))
         self.invia(f"BS1 T {sigla} {int(time.time())}")
         stazione = self.stazioni.get(sigla, {})
+        nodo = stazione.get("nodo") or sigla
+        if modello:
+            self.modello[nodo] = modello
         scrivi_csv(LOG_TELEMETRIA, COLONNE_TELEMETRIA, [{
-            "timestamp": f"{datetime.now():%Y-%m-%d %H:%M:%S}", "nodo": stazione.get("nodo") or sigla,
+            "timestamp": f"{datetime.now():%Y-%m-%d %H:%M:%S}", "nodo": nodo,
             "batteria_perc": intero(bat), "batteria_mv": intero(mv),
             "temperatura": dieci(t10), "pressione": dieci(p10), "umidita": intero(umid),
+            "ascolto_oggi_min": intero(asc_oggi), "ascolto_ieri_min": intero(asc_ieri), "modello": modello,
         }])
 
     def _dati(self, parti):
@@ -147,8 +167,8 @@ class Ricevitore:
         stazione = self.stazioni.get(sigla, {})
         nuovi = []
         for rec in filter(None, record.split(";")):
-            campi = (rec.split(",") + [""] * 6)[:6]
-            ts_compatto, codice, conf, temp10, pres10, umid = [c.strip() for c in campi]
+            campi = (rec.split(",") + [""] * 7)[:7]
+            ts_compatto, codice, conf, temp10, pres10, umid, flag = [c.strip() for c in campi]
             dt = datetime.strptime(ts_compatto, "%Y%m%d%H%M%S")
             sp = self.specie.get(codice.upper())
             if sp is None:
@@ -167,6 +187,8 @@ class Ricevitore:
                 "gps_lon": stazione.get("lon", ""),
                 "altitudine_mslm": stazione.get("quota", ""),
                 "file_audio": f"{sigla}_{dt:%Y%m%d}_{dt:%H%M%S}.wav",
+                "modello": self.modello.get(stazione.get("nodo") or sigla, ""),
+                "campione": "1" if flag.lower() == "c" else "",
             }
             chiave = (riga["timestamp"], riga["nodo"], riga["specie_ita"])
             if chiave in self.gia_scritti:

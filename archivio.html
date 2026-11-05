@@ -86,6 +86,33 @@
     .barre .nome small{display:none}
   }
 
+  /* ---- fuori checklist, campioni, quando cantano ---- */
+  .fuori{display:inline-block;margin-left:6px;font:600 10.5px/1.6 var(--sans);letter-spacing:.03em;padding:0 6px;border-radius:999px;border:1px solid #e0b25a;color:#f0c97a;vertical-align:1px;font-style:normal}
+  .camp{display:inline-block;margin-top:3px;font-size:11.5px;color:var(--piuma);border:1px dashed var(--linea);border-radius:999px;padding:0 7px}
+  .nota-grafico{margin:12px 0 0;font-size:13px;color:var(--piuma);line-height:1.5}
+  .attese{margin-top:14px;font-size:14px}
+  .attese summary{cursor:pointer;color:var(--arancio-chiaro);font-weight:600}
+  .attese ul{columns:3 220px;margin:10px 0 0;padding-left:18px;color:#d9dddb;font-size:13.5px;line-height:1.6}
+  .attese ul small{color:var(--piuma)}
+  .quando-cantano{margin-top:24px;display:grid;grid-template-columns:1.6fr 1fr;gap:18px}
+  .istogramma h3{font-size:15px;margin:0 0 4px}
+  .istogramma p{margin:0 0 10px;font-size:13px;color:var(--piuma)}
+  .colonne{display:flex;align-items:flex-end;gap:2px;height:130px;border-bottom:1px solid var(--linea);position:relative}
+  .colonne .col{flex:1;background:#ec7a32;border-radius:3px 3px 0 0;min-height:0;position:relative}
+  .colonne .col:hover{background:#ffa25e}
+  .colonne .col.zero{background:transparent}
+  .etich{display:flex;gap:2px;margin-top:4px;font-size:11px;color:var(--piuma)}
+  .etich span{flex:1;text-align:center;overflow:visible;white-space:nowrap}
+  .richiesta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:18px;padding-top:14px;border-top:1px solid var(--linea)}
+  .richiesta p{margin:0;font-size:13.5px;color:var(--piuma);flex:1;min-width:240px}
+  dialog.csv{max-width:520px;width:calc(100% - 32px);background:#232a2e;color:var(--testo);border:1px solid var(--linea);border-radius:16px;padding:24px 24px 20px}
+  dialog.csv::backdrop{background:rgba(0,0,0,.6)}
+  dialog.csv h2{font-size:20px;margin:0 0 10px}
+  dialog.csv p{font-size:15px;line-height:1.55;margin:0 0 12px;color:#d9dddb}
+  dialog.csv .piccola{font-size:13px;color:var(--piuma)}
+  dialog.csv .azioni{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
+  @media (max-width:720px){ .quando-cantano{grid-template-columns:1fr} }
+
   @media (max-width:980px){ .filtri{grid-template-columns:1fr 1fr} .campo.cerca{grid-column:1/-1} }
   @media (max-width:720px){
     .tabella thead{display:none}
@@ -179,8 +206,40 @@
     <div class="barre" id="barre" role="list"></div>
     <div class="assi" aria-hidden="true"><span></span><div class="scala" id="scala"></div><span></span></div>
     <button type="button" class="btn secondario piccolo piu-specie" id="piu-specie" hidden></button>
+    <p class="nota-grafico" id="nota-campione">I canti con affidabilità sotto l'85% sono un <b>campione di controllo</b>: la stazione ne salva solo uno su dieci, scelto a caso, per valutare il modello. Nelle due fasce più scure i numeri reali sono quindi più alti. I canti segnati <span class="fuori">fuori checklist</span> sono di specie non presenti nella checklist della riserva (Battisti et al. 2021): possono essere errori del modello oppure segnalazioni nuove, da verificare.</p>
+    <details class="attese" id="attese" hidden><summary id="attese-titolo"></summary><ul id="attese-lista"></ul></details>
+
+    <div class="quando-cantano">
+      <div class="istogramma">
+        <h3>Quando cantano: ora del giorno</h3>
+        <p id="q-ora-sotto">Canti per ora (ora italiana)</p>
+        <div class="colonne" id="q-ora"></div>
+        <div class="etich" id="q-ora-et"></div>
+      </div>
+      <div class="istogramma">
+        <h3>Quando cantano: mese</h3>
+        <p>Canti per mese dell'anno</p>
+        <div class="colonne" id="q-mese"></div>
+        <div class="etich" id="q-mese-et"></div>
+      </div>
+    </div>
+    <p class="nota-grafico">I due grafici seguono i filtri impostati sopra: scegli una specie per vedere quando canta. Di notte la stazione ascolta solo in alcuni mesi (ottobre-febbraio è spenta dalle 23 alle 5), quindi le ore notturne sono sottostimate. I campioni di controllo non sono conteggiati.</p>
+
+    <div class="richiesta">
+      <p>Ricercatori, ornitologi, appassionati: aiutateci a valutare il riconoscimento delle specie.</p>
+      <button type="button" class="btn piccolo" id="b-csv">Richiedi file CSV per valutazione</button>
+    </div>
   </section>
   <div id="sugg" hidden></div>
+  <dialog class="csv" id="d-csv" aria-labelledby="d-csv-t">
+    <h2 id="d-csv-t">Richiedi il file CSV per valutazione</h2>
+    <p>Partecipa al miglioramento del riconoscimento delle specie ascoltate nel Monumento Naturale Palude di Torre Flavia. Verifica il file e nelle note conferma e/o suggerisci il riconoscimento.</p>
+    <p class="piccola">Il pulsante apre il tuo programma di posta con un messaggio già pronto, indirizzato a riconoscimento-specie@birdsongtech.it. Aggiungi chi sei ed eventualmente l'ente: ti risponderemo con il file.</p>
+    <div class="azioni">
+      <button type="button" class="btn secondario piccolo" id="d-csv-chiudi">Annulla</button>
+      <a class="btn piccolo" id="d-csv-mail" href="#">Scrivi l'email</a>
+    </div>
+  </dialog>
 </main>
 
 <footer class="piede">
@@ -254,12 +313,14 @@
       return `<tr>
         <td class="quando num">${dataBreve(r.data)}<small>ore ${ora(r.ora)}</small></td>
         <td><span class="specie">${esc(r.specie)}</span><span class="sci">${esc(r.sci)}</span></td>
-        <td data-t="Affidabilità">${confHTML(r.score)}</td>
+        <td data-t="Affidabilità">${confHTML(r.score)}${r.campione ? '<br><span class="camp" title="Salvato a caso per valutare il modello">campione di controllo</span>' : ''}</td>
         <td class="meteo" data-t="Meteo">${esc(meteo)}</td>
         <td>${bottoneAscolta(r)}</td>
       </tr>`;
     }).join('');
     grafico(lista);
+    quando(lista);
+    attese();
     aggiornaIndirizzo();
   }
 
@@ -272,6 +333,48 @@
     th.setAttribute('aria-sort', ordine.dir > 0 ? 'ascending' : 'descending');
     mostra();
   }));
+  /* ---- checklist della riserva (data/rilevamenti.js -> specie, chiave nome scientifico) ---- */
+  const CHECK = () => (window.BIRDSONG && window.BIRDSONG.specie) || {};
+  const inChecklist = sci => !Object.keys(CHECK()).length || !!CHECK()[norm(sci)];
+  function attese(){
+    const viste = new Set(R.map(r => norm(r.sci)));
+    const mancano = Object.entries(CHECK()).filter(([k]) => !viste.has(k)).map(([k, v]) => ({nome: v.nome, sci: k, presenza: v.presenza}))
+      .sort((a,b) => a.nome.localeCompare(b.nome, 'it'));
+    $('attese').hidden = !mancano.length || !R.length;
+    $('attese-titolo').textContent = `Specie della checklist non ancora riconosciute: ${mancano.length} su ${Object.keys(CHECK()).length}`;
+    $('attese-lista').innerHTML = mancano.map(m => `<li>${esc(m.nome)} <small>${esc(m.presenza || '')}</small></li>`).join('');
+  }
+
+  /* ---- quando cantano: ora del giorno e mese ---- */
+  const MESI3 = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  function colonne(idEl, idEt, valori, etichette, cosa){
+    const max = Math.max(1, ...valori);
+    $(idEl).innerHTML = valori.map((v, i) =>
+      `<div class="col${v ? '' : ' zero'}" style="height:${v / max * 100}%" title="${cosa(i)}: ${v} ${v === 1 ? 'canto' : 'canti'}"></div>`).join('');
+    $(idEt).innerHTML = etichette.map(t => `<span>${t}</span>`).join('');
+  }
+  function quando(lista){
+    const veri = lista.filter(r => !r.campione);
+    const ore = Array(24).fill(0), mesi = Array(12).fill(0);
+    for (const r of veri){ ore[+r.ora.slice(0,2)]++; mesi[+r.data.slice(5,7) - 1]++; }
+    colonne('q-ora', 'q-ora-et', ore, ore.map((_, h) => h % 3 === 0 ? h : ''), h => `dalle ${h} alle ${h+1}`);
+    colonne('q-mese', 'q-mese-et', mesi, MESI3, m => MESI3[m]);
+    const sp = new Set(veri.map(r => r.specie));
+    $('q-ora-sotto').textContent = sp.size === 1 ? `Canti per ora (ora italiana): ${[...sp][0]}` : 'Canti per ora (ora italiana)';
+  }
+
+  /* ---- richiesta del file CSV ---- */
+  $('b-csv').addEventListener('click', () => {
+    const filtri = [f.testo.value.trim() && `specie: ${f.testo.value.trim()}`, f.dal.value && `dal ${f.dal.value}`, f.al.value && `al ${f.al.value}`,
+                    fascia() && `affidabilità: ${({'80':"fino all'80%",'90':'80-90%','100':'90-100%'})[fascia()]}`].filter(Boolean).join(', ') || 'tutto l\'archivio';
+    const corpo = `Buongiorno,\n\nvorrei ricevere il file CSV dei canti riconosciuti per verificarli.\n\nCanti richiesti: ${filtri}\nNome e cognome: \nEnte o associazione (facoltativo): \nEsperienza ornitologica (facoltativo): \n\nGrazie`;
+    $('d-csv-mail').href = 'mailto:riconoscimento-specie@birdsongtech.it?subject=' + encodeURIComponent('RICHIESTA FILE CSV') + '&body=' + encodeURIComponent(corpo);
+    $('d-csv').showModal();
+  });
+  $('d-csv-chiudi').addEventListener('click', () => $('d-csv').close());
+  $('d-csv-mail').addEventListener('click', () => setTimeout(() => $('d-csv').close(), 300));
+  $('d-csv').addEventListener('click', e => { if (e.target === $('d-csv')) $('d-csv').close(); });
+
   /* ---- grafico: canti per specie, divisi per fascia di affidabilita' ---- */
   const COL = {alta:'#ffc896', media:'#ec7a32', bassa:'#a84e1c'};
   const PRIME = 15;
@@ -298,7 +401,7 @@
       const seg = ['alta','media','bassa'].filter(k => e[k]).map(k =>
         `<span class="seg" style="width:${e[k]/fondo*100}%;background:${COL[k]}" data-k="${k}" data-v="${e[k]}"></span>`).join('');
       return `<div class="riga" role="listitem" data-specie="${esc(e.specie)}" data-n="${e.n}">
-        <button type="button" class="nome" title="Mostra i canti di ${esc(e.specie)}">${esc(e.specie)}<small>${esc(e.sci)}</small></button>
+        <button type="button" class="nome" title="Mostra i canti di ${esc(e.specie)}">${esc(e.specie)}${inChecklist(e.sci) ? '' : '<span class="fuori">fuori checklist</span>'}<small>${esc(e.sci)}</small></button>
         <div class="traccia" aria-label="${esc(e.specie)}: ${e.n} canti (90-100%: ${e.alta}, 80-90%: ${e.media}, fino all'80%: ${e.bassa})">${seg}</div>
         <span class="tot">${e.n}</span></div>`;
     }).join('');

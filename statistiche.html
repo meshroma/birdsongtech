@@ -98,6 +98,8 @@
 
   <section class="grafici">
     <article class="grafico largo" id="g-canti"></article>
+    <article class="grafico" id="g-ascolto"></article>
+    <article class="grafico" id="g-resa"></article>
     <article class="grafico largo" id="g-temp"></article>
     <article class="grafico" id="g-umid"></article>
     <article class="grafico" id="g-press"></article>
@@ -105,7 +107,7 @@
   </section>
 
   <div class="tabella-stat" id="tabella" hidden></div>
-  <p class="nota nota-dati">Valori giornalieri calcolati dalle misure della stazione: la telemetria arriva due volte al giorno e a ogni canto riconosciuto. Il punto di rugiada è calcolato da temperatura e umidità (formula di Magnus). La pagina si aggiorna da sola ogni 30 minuti.</p>
+  <p class="nota nota-dati">Valori giornalieri calcolati dalle misure della stazione: la telemetria arriva due volte al giorno e a ogni canto riconosciuto. Il punto di rugiada è calcolato da temperatura e umidità (formula di Magnus). Le ore di ascolto arrivano dalla stazione con la telemetria; i campioni di controllo sotto l'85% non sono contati tra i canti validi. La pagina si aggiorna da sola ogni 30 minuti.</p>
 </main>
 
 <footer class="piede">
@@ -162,7 +164,7 @@
       const pad = Math.max((hi - lo) * .15, cfg.passo || 1);
       if (y0 == null) y0 = cfg.tipo === 'barre' ? 0 : Math.floor((lo - pad) / (cfg.passo || 1)) * (cfg.passo || 1);
       if (y1 == null) y1 = Math.ceil((hi + pad) / (cfg.passo || 1)) * (cfg.passo || 1);
-      if (cfg.tipo === 'barre') y1 = Math.max(y1, 4);
+      if (cfg.tipo === 'barre') y1 = Math.max(y1, cfg.decimali ? (cfg.passo || 1) : 4);
       if (y1 <= y0) y1 = y0 + (cfg.passo || 1);
     }
     const y = v => m.t + ih - (v - y0) / (y1 - y0) * ih;
@@ -170,7 +172,7 @@
     /* tacche asse y: circa 4 righe di griglia */
     const grezzo = (y1 - y0) / 4, mag = Math.pow(10, Math.floor(Math.log10(grezzo)));
     let passoY = [1,2,2.5,5,10].map(k => k*mag).find(k => k >= grezzo) || grezzo;
-    if (cfg.tipo === 'barre') passoY = Math.max(1, Math.round(passoY));   // conteggi: solo numeri interi
+    if (cfg.tipo === 'barre' && !cfg.decimali) passoY = Math.max(1, Math.round(passoY));   // conteggi: solo numeri interi
     let svg = '';
     for (let v = Math.ceil(y0 / passoY) * passoY; v <= y1 + 1e-9; v += passoY){
       svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--griglia)"/>`;
@@ -273,6 +275,10 @@
 
     grafico($('g-canti'), {titolo: 'Canti validi al giorno', sotto: `Canti riconosciuti con affidabilità di almeno il ${Math.round((S.soglia || .8) * 100)}%`, tipo: 'barre', passo: 1,
       serie: [{nome: 'Canti validi', colore: C.arancio, val: v => v.canti, unita: '', dec: 0}]});
+    grafico($('g-ascolto'), {titolo: 'Ore di ascolto al giorno', sotto: 'Tempo in cui la stazione ha davvero ascoltato (esclusi spegnimenti e scarichi)', tipo: 'barre', passo: 4, ymax: 24,
+      serie: [{nome: 'Ore di ascolto', colore: C.blu, val: v => v.ascolto_min != null ? Math.round(v.ascolto_min / 6) / 10 : null, unita: 'ore', dec: 1}]});
+    grafico($('g-resa'), {titolo: 'Canti validi per ora di ascolto', sotto: 'Canti validi diviso ore di ascolto: confrontabile tra giorni diversi', tipo: 'barre', passo: .5, decimali: true,
+      serie: [{nome: 'Canti per ora', colore: C.arancio, val: v => v.canti_ora, unita: 'canti/ora', dec: 2}]});
     grafico($('g-temp'), {titolo: 'Temperatura e punto di rugiada', sotto: 'Gradi Celsius: media giornaliera, con la fascia tra minima e massima', tipo: 'linee', passo: 2,
       serie: [{nome: 'Temperatura media', colore: C.arancio, val: v => v.t_med, min: v => v.t_min, max: v => v.t_max, unita: '°C', dec: 1, fascia: 'temperatura minima – massima'},
               {nome: 'Punto di rugiada', colore: C.blu, val: v => v.r_med, unita: '°C', dec: 1}]});
@@ -284,9 +290,9 @@
       serie: [{nome: 'Batteria', colore: C.blu, val: v => v.b_ult, min: v => v.b_min, max: v => v.b_max, unita: '%', dec: 0}]});
 
     /* tabella dei dati (alternativa accessibile ai grafici) */
-    $('tabella').innerHTML = `<table class="tabella"><thead><tr><th>Giorno</th><th>Canti validi</th><th>T min</th><th>T media</th><th>T max</th><th>Rugiada</th><th>Umidità</th><th>Pressione</th><th>Batteria</th></tr></thead><tbody>${
-      conDati.length ? conDati.map(g => `<tr><td>${g.giorno} ${MESI[mese-1]}</td><td>${g.v.canti}</td><td>${fmt(g.v.t_min)}</td><td>${fmt(g.v.t_med)}</td><td>${fmt(g.v.t_max)}</td><td>${fmt(g.v.r_med)}</td><td>${fmt(g.v.u_med,0)}${g.v.u_med != null ? '%' : ''}</td><td>${fmt(g.v.p_med)}</td><td>${g.v.b_ult ?? '—'}${g.v.b_ult != null ? '%' : ''}</td></tr>`).join('')
-      : '<tr><td colspan="9" style="text-align:left;color:var(--piuma)">Nessun dato per questo mese.</td></tr>'}</tbody></table>`;
+    $('tabella').innerHTML = `<table class="tabella"><thead><tr><th>Giorno</th><th>Canti validi</th><th>T min</th><th>T media</th><th>T max</th><th>Rugiada</th><th>Umidità</th><th>Pressione</th><th>Batteria</th><th>Ore ascolto</th><th>Canti/ora</th></tr></thead><tbody>${
+      conDati.length ? conDati.map(g => `<tr><td>${g.giorno} ${MESI[mese-1]}</td><td>${g.v.canti}</td><td>${fmt(g.v.t_min)}</td><td>${fmt(g.v.t_med)}</td><td>${fmt(g.v.t_max)}</td><td>${fmt(g.v.r_med)}</td><td>${fmt(g.v.u_med,0)}${g.v.u_med != null ? '%' : ''}</td><td>${fmt(g.v.p_med)}</td><td>${g.v.b_ult ?? '—'}${g.v.b_ult != null ? '%' : ''}</td><td>${g.v.ascolto_min != null ? fmt(g.v.ascolto_min / 60) : '—'}</td><td>${fmt(g.v.canti_ora, 2)}</td></tr>`).join('')
+      : '<tr><td colspan="11" style="text-align:left;color:var(--piuma)">Nessun dato per questo mese.</td></tr>'}</tbody></table>`;
   }
 
   function sposta(delta){

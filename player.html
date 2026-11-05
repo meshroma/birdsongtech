@@ -243,6 +243,8 @@ function mostraErrore(t){$('errore').textContent=t;$('errore').style.display='bl
     ];
     if(r.temperatura!=null||r.pressione!=null) righe.push(['Meteo',[r.temperatura!=null?r.temperatura+' °C':null,r.pressione!=null?r.pressione+' hPa':null].filter(Boolean).join(', ')]);
     if(r.quota!=null) righe.push(['Quota',r.quota+' m s.l.m.']);
+    if(r.modello) righe.push(['Modello',r.modello]);
+    if(r.campione) righe.push(['Nota','campione di controllo (salvato a caso per valutare il modello)']);
     $('s-dati').innerHTML=righe.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('');
     /* altri canti della stessa specie con audio */
     const altri=DATI.rilevamenti.filter(x=>x.specie===r.specie&&x.audio&&x.id!==r.id).slice(0,6);

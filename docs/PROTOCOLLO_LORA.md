@@ -61,15 +61,20 @@ Testo ASCII, campi separati da spazi, **massimo 200 caratteri per messaggio**. O
 
 **H, risveglio.** Va inviato come primo messaggio a ogni risveglio della V4. Porta anche la telemetria della scheda ambientale (temperatura, pressione, umidità): così le statistiche hanno almeno due misure al giorno anche nei giorni senza canti.
 ```
-BS1 H <stazione> <batteria%> <batteria_mV> <rilevamenti_in_coda> <temperatura×10> <pressione×10> <umidità%>
-BS1 H TF01 87 3990 12 124 10154 78
+BS1 H <stazione> <batteria%> <batteria_mV> <in_coda> <temperatura×10> <pressione×10> <umidità%> <ascolto_oggi_min> <ascolto_ieri_min> <modello>
+BS1 H TF01 87 3990 12 124 10154 78 412 1080 m1.0
 ```
-Gli ultimi tre campi sono facoltativi: un messaggio `H` senza sensori resta valido.
+**I campi del messaggio H:**
+- `ascolto_oggi_min`: minuti in cui la XIAO ha davvero ascoltato da mezzanotte (ora locale) a ora. Si escludono le ore di spegnimento programmato, lo scarico WiFi e il sonno per batteria bassa.
+- `ascolto_ieri_min`: totale del giorno prima. Serve perché l'ultimo `H` della giornata parte alle 20:30, prima della fine dell'ascolto.
+- `modello`: versione del modello di riconoscimento caricato sulla XIAO, senza spazi (per esempio `m1.0`). Ogni rilevamento viene registrato con la versione attiva in quel momento. Quando si aggiorna il modello si cambia la versione: così i dati di modelli diversi restano distinguibili.
+
+**Campi mancanti.** I campi dal sesto in poi sono facoltativi, ma vanno in ordine. Un valore mancante in mezzo si scrive `-`, per esempio senza sensori: `BS1 H TF01 87 3990 12 - - - 412 1080 m1.0`. Un `H` con solo i primi quattro campi resta valido.
 
 **D, rilevamenti.** Più rilevamenti per messaggio, separati da `;`.
 ```
 BS1 D <stazione> <seq> <batteria%> <rec>;<rec>;...
-rec = <AAAAMMGGhhmmss>,<CODICE_SPECIE>,<confidenza%>,<temperatura×10>,<pressione×10>,<umidità%>
+rec = <AAAAMMGGhhmmss>,<CODICE_SPECIE>,<confidenza%>,<temperatura×10>,<pressione×10>,<umidità%>[,c]
 
 BS1 D TF01 41 87 20261102064512,ERIRUB,91,124,10154,78;20261102065003,CETCET,88,125,10154,79
 ```
@@ -77,6 +82,7 @@ BS1 D TF01 41 87 20261102064512,ERIRUB,91,124,10154,78;20261102065003,CETCET,88,
 - `CODICE_SPECIE` è un codice di 6 lettere preso da `raspberry/specie.csv`. Le etichette del modello AI vanno mappate su questi codici.
 - Temperatura e pressione si moltiplicano per 10 e si scrivono come interi (`12.4 °C` → `124`, `1015.4 hPa` → `10154`). L'umidità relativa è un intero in percentuale (`78`). Se manca un sensore, lascia il campo vuoto: `...,91,,,`.
 - Il punto di rugiada non si trasmette: lo calcola `pubblica.py` da temperatura e umidità.
+- Il settimo campo `c`, facoltativo, indica un **campione di controllo**: un rilevamento sotto la soglia di salvataggio, conservato a caso per valutare il modello. Vedi la sezione 5.
 - Ogni rilevamento occupa circa 40 caratteri, quindi ci stanno circa 4 rilevamenti per messaggio.
 
 ### Dalla base al campo
@@ -139,6 +145,17 @@ La scatola sta in cima al palo e si tira giù solo per emergenze, quindi tutto s
 Velocità indicative: Bluetooth 30-80 KB/s, circa 10-15 s per file; Wi-Fi 1-2 MB/s, meno di 1 s per file. Il Bluetooth serve solo come "interruttore".
 
 Dalla stessa pagina si può caricare un **nuovo firmware (OTA)**, così anche gli aggiornamenti non richiedono di smontare la scatola. Conviene tenere sempre un firmware di riserva funzionante: lo schema di partizioni con due slot OTA dell'ESP32 lo fa in automatico.
+
+### Campione di controllo per valutare il modello
+
+Se la XIAO salvasse solo i rilevamenti sopra la soglia (85 %), non si saprebbe mai cosa il modello scarta né quale soglia conviene. Per questo salva anche **un rilevamento su 10, scelto a caso, tra il 50 % e la soglia**:
+- il file `.wav` si registra e si nomina come gli altri;
+- nel messaggio `D` il rilevamento porta il campo finale `c`;
+- nel sito compare nelle fasce di affidabilità "80-90 %" e "fino all'80 %" del grafico *birdsongtech performance*.
+
+I conteggi di quelle fasce sono quindi **un decimo** di quelli reali. Il sito lo indica sotto il grafico.
+
+Parametri nel firmware: `SOGLIA_SALVA = 0.85`, `SOGLIA_CAMPIONE = 0.50`, `FRAZIONE_CAMPIONE = 0.10`. Se si cambiano, va annotato in questo documento con la data.
 
 ## 6. Orari di ascolto
 
