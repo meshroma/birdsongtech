@@ -1,0 +1,2 @@
+timestamp,nodo,tipo,snr,rssi,hop,relay,ch_util,air_tx,uptime_s,batteria_perc,tensione_v,rx_tot,rx_err,rx_dup,tx_tot,nodi_online
+2026-11-06 00:59:43,!9e9d7a38,BASE,,,,,,,2764,,,,,,,1
