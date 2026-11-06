@@ -31,6 +31,8 @@
   .riga-sotto{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:12px;font-size:14px;color:var(--piuma)}
   .spunta{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
   .spunta input{accent-color:var(--arancio);width:16px;height:16px}
+  #g-tutte{margin:2px 0 6px}
+  .btn[hidden]{display:none}
   .azzera{background:none;border:none;color:var(--arancio-chiaro);font:inherit;cursor:pointer;padding:4px 0;text-decoration:underline}
 
   .esiti{margin-top:26px}
@@ -203,6 +205,7 @@
     <h2 id="t-grafico">birdsongtech performance</h2>
     <p class="sotto-titolo" id="g-sottotitolo">Canti riconosciuti per specie, divisi per affidabilità del riconoscimento</p>
     <p class="sotto" id="g-sotto"></p>
+    <button type="button" class="btn secondario piccolo" id="g-tutte" hidden>← Torna a tutte le specie</button>
     <div class="vista" role="group" aria-label="Cosa mostrare nelle barre">
       <button type="button" class="btn secondario piccolo" data-vista="affidabilita" aria-pressed="true">Affidabilità</button>
       <button type="button" class="btn secondario piccolo" data-vista="verifiche" aria-pressed="false">Verifiche degli esperti</button>
@@ -427,7 +430,8 @@
     const fondo = Math.ceil(max / passo) * passo;
     const filtrato = f.testo.value.trim() || f.dal.value || f.al.value || fascia();
     $('g-sotto').textContent = `${lista.length} ${lista.length === 1 ? 'canto' : 'canti'} di ${elenco.length} ${elenco.length === 1 ? 'specie' : 'specie diverse'}` +
-      (filtrato ? ', con i filtri impostati sopra.' : ', tutto l\'archivio.') + ' In alto le specie più presenti. Clicca un nome per vederne i canti.';
+      (filtrato ? ', con i filtri impostati sopra.' : ', tutto l\'archivio.') + (f.testo.value.trim() ? ' Clicca di nuovo il nome, o il pulsante qui sotto, per tornare a tutte le specie.' : ' In alto le specie più presenti. Clicca un nome per vederne i canti.');
+    $('g-tutte').hidden = !f.testo.value.trim();
     const mostrate = tutte ? elenco : elenco.slice(0, PRIME);
     $('barre').innerHTML = mostrate.map(e => {
       const seg = V.chiavi.filter(k => e[k]).map(k =>
@@ -447,9 +451,12 @@
   $('piu-specie').addEventListener('click', () => { tutte = !tutte; mostra(); });
   $('barre').addEventListener('click', e => {
     const b = e.target.closest('.nome'); if (!b) return;
-    f.testo.value = b.closest('.riga').dataset.specie; mostra();
+    const sp = b.closest('.riga').dataset.specie;
+    if (f.testo.value.trim() === sp){ f.testo.value = ''; mostra(); return; }   // secondo clic sulla stessa specie: toglie il filtro
+    f.testo.value = sp; mostra();
     document.querySelector('.esiti').scrollIntoView({behavior:'smooth', block:'start'});
   });
+  $('g-tutte').addEventListener('click', () => { f.testo.value = ''; mostra(); });
   /* suggerimento al passaggio del mouse */
   const sugg = $('sugg');
 
