@@ -128,13 +128,18 @@ body.con-spettro #avvio{padding-bottom:200px}
 #legenda{position:fixed;bottom:18px;right:90px;z-index:20;pointer-events:none;font-size:11.5px;line-height:1.9;color:rgba(255,255,255,.45);text-align:right}
 
 @media (max-width:720px){
-  #scheda{top:auto;bottom:0;left:0;right:0;width:auto;border-radius:16px 16px 0 0;max-height:46%;padding:16px}
+  #scheda{top:auto;bottom:0;left:0;right:0;width:auto;border-radius:16px 16px 0 0;max-height:30%;padding:10px 14px}
+  #scheda .nome{font-size:18px}
+  #scheda .sci{font-size:13.5px;margin-top:0}
+  #comandi{margin-top:8px;gap:7px}
+  #scheda .btn{font-size:13px;padding:7px 12px}
+  #istruzioni{margin-top:10px;padding-top:8px}
   #altri,#legenda,#crediti{display:none}
-  #spettro{left:8px;right:8px;top:126px;bottom:auto;height:190px}
+  #spettro{left:8px;right:8px;top:104px;bottom:auto;height:190px}
   #sp-info,#sp-leg{display:none}
   body.con-spettro #avvio{padding-bottom:0}
   .crediti-mobile{display:block;margin-top:10px;font-size:11px;line-height:1.5;color:var(--piuma)}
-  #indietro{top:62px}
+  #indietro{top:62px;font-size:13px;gap:6px;padding:8px 13px}   /* sul telefono resta piccolo */
   #s-foto figure{float:left;width:42%;margin:0 12px 6px 0}
   #s-foto figcaption{font-size:9.5px}
   #s-dati{clear:both}
