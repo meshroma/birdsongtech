@@ -647,7 +647,7 @@ ctrl.addEventListener('start',()=>{ruota=false;trascina=true;});   // trascinand
 ctrl.addEventListener('end',()=>{trascina=false;});
 /* a fine canto la scena gira di 90 gradi attorno all'asse verticale: si vede il canto dall'altra prospettiva */
 let giro=null;                                      // {da, t} mentre la rotazione di fine canto e' in corso
-const DURATA_GIRO=2.5;                              // secondi
+const DURATA_GIRO=3;                                // secondi
 function giraFineCanto(){
   if(trascina||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   giro={da:grp.rotation.y,t:0};
@@ -658,7 +658,7 @@ function animate(){
   if(giro){                                         // rotazione morbida (accelera e rallenta) di fine canto
     giro.t=Math.min(1,giro.t+dt/DURATA_GIRO);
     const k=giro.t<.5?2*giro.t*giro.t:1-Math.pow(-2*giro.t+2,2)/2;
-    grp.rotation.y=giro.da+k*Math.PI/2;
+    grp.rotation.y=giro.da-k*Math.PI/2;             // verso opposto alla rotazione lenta automatica
     if(giro.t>=1||trascina)giro=null;
   }else if(ruota)grp.rotation.y+=0.00022;
   ctrl.update();
