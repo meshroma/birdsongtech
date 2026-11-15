@@ -200,3 +200,12 @@ verifiche/
 
 # documentazione tecnica: resta solo sul PC, non va pubblicata su GitHub
 docs/
+
+# firmware: codici e password personali, sketch di prova con codici dentro, registrazioni di prova
+segreti.h
+firmware/prova_scarico/
+prove/
+# firmware DarkMesh della V4: archivio locale, non va sul sito
+darkmesh/
+# dati originali delle migrazioni (Movebank): grandi, restano sul PC
+migrazione_dati/

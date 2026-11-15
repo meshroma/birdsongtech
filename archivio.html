@@ -32,6 +32,7 @@
   .spunta{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
   .spunta input{accent-color:var(--arancio);width:16px;height:16px}
   #g-tutte{margin:2px 0 6px}
+  .g-azioni{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 10px}
   .btn[hidden]{display:none}
   .azzera{background:none;border:none;color:var(--arancio-chiaro);font:inherit;cursor:pointer;padding:4px 0;text-decoration:underline}
 
@@ -206,6 +207,10 @@
     <p class="sotto-titolo" id="g-sottotitolo">Canti riconosciuti per specie, divisi per affidabilità del riconoscimento</p>
     <p class="sotto" id="g-sotto"></p>
     <button type="button" class="btn secondario piccolo" id="g-tutte" hidden>← Torna a tutte le specie</button>
+    <div class="g-azioni" id="g-azioni" hidden>
+      <a class="btn piccolo" id="g-ascolta" href="#">Ascolta il canto</a>
+      <button type="button" class="btn piccolo" id="g-migra" hidden>Animazione migrazione</button>
+    </div>
     <div class="vista" role="group" aria-label="Cosa mostrare nelle barre">
       <button type="button" class="btn secondario piccolo" data-vista="affidabilita" aria-pressed="true">Affidabilità</button>
       <button type="button" class="btn secondario piccolo" data-vista="verifiche" aria-pressed="false">Verifiche degli esperti</button>
@@ -259,6 +264,8 @@
 
 <script src="data/rilevamenti.js"></script>
 <script src="assets/sito.js"></script>
+<script src="data/migrazioni/indice.js"></script>
+<script src="assets/migrazione.js"></script>
 <script>
 (function(){
   const {D, esc, dataBreve, ora, confHTML, bottoneAscolta, specieConteggio} = BS;
@@ -432,6 +439,7 @@
     $('g-sotto').textContent = `${lista.length} ${lista.length === 1 ? 'canto' : 'canti'} di ${elenco.length} ${elenco.length === 1 ? 'specie' : 'specie diverse'}` +
       (filtrato ? ', con i filtri impostati sopra.' : ', tutto l\'archivio.') + (f.testo.value.trim() ? ' Clicca di nuovo il nome, o il pulsante qui sotto, per tornare a tutte le specie.' : ' In alto le specie più presenti. Clicca un nome per vederne i canti.');
     $('g-tutte').hidden = !f.testo.value.trim();
+    azioniSpecie(lista);
     const mostrate = tutte ? elenco : elenco.slice(0, PRIME);
     $('barre').innerHTML = mostrate.map(e => {
       const seg = V.chiavi.filter(k => e[k]).map(k =>
@@ -448,6 +456,21 @@
     piu.hidden = elenco.length <= PRIME;
     piu.textContent = tutte ? `Mostra solo le prime ${PRIME}` : `Mostra tutte le ${elenco.length} specie`;
   }
+  /* specie scelta: pulsanti "Ascolta il canto" (visualizzatore 3D) e "Animazione migrazione" (solo se ci sono dati certi) */
+  function azioniSpecie(lista){
+    const sp = f.testo.value.trim();
+    const suoi = sp ? lista.filter(r => r.specie === sp) : [];
+    $('g-azioni').hidden = !suoi.length;
+    if (!suoi.length) return;
+    const conAudio = suoi.filter(r => r.audio).sort((a,b) => (b.score||0) - (a.score||0));
+    const asc = $('g-ascolta');
+    asc.hidden = !conAudio.length;
+    if (conAudio.length) asc.href = BS.linkPlayer ? BS.linkPlayer(conAudio[0]) : `player.html?id=${encodeURIComponent(conAudio[0].id)}`;
+    const sci = suoi[0].sci, migra = $('g-migra');
+    migra.hidden = !(window.BSMigrazione && BSMigrazione.disponibile(sci));
+    migra.dataset.sci = sci;
+  }
+  $('g-migra').addEventListener('click', e => BSMigrazione.apri(e.currentTarget.dataset.sci));
   $('piu-specie').addEventListener('click', () => { tutte = !tutte; mostra(); });
   $('barre').addEventListener('click', e => {
     const b = e.target.closest('.nome'); if (!b) return;
