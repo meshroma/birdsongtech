@@ -34,8 +34,8 @@ a{color:var(--arancio-chiaro)}
 
 
 /* ---- pulsante indietro ---- */
-#indietro{position:fixed;top:66px;left:20px;z-index:30;display:inline-flex;align-items:center;gap:6px;font:600 13px/1 var(--sans);
-  padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(28,33,36,.88);color:var(--testo);cursor:pointer;text-decoration:none}
+#indietro{position:fixed;top:66px;left:20px;z-index:30;display:inline-flex;align-items:center;gap:10px;font:600 26px/1 var(--sans);
+  padding:14px 24px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(28,33,36,.88);color:var(--testo);cursor:pointer;text-decoration:none}
 #indietro:hover{border-color:var(--arancio);color:#fff}
 
 /* ---- istruzioni ---- */
@@ -64,7 +64,7 @@ body.con-spettro #legenda{bottom:268px}
 body.con-spettro #avvio{padding-bottom:200px}
 
 /* ---- scheda del rilevamento ---- */
-#scheda{position:fixed;top:112px;left:20px;width:310px;z-index:30;background:rgba(28,33,36,.88);border:1px solid rgba(255,255,255,.08);
+#scheda{position:fixed;top:136px;left:20px;width:310px;z-index:30;background:rgba(28,33,36,.88);border:1px solid rgba(255,255,255,.08);
   border-radius:16px;padding:20px;backdrop-filter:blur(6px);max-height:calc(100% - 132px);overflow-y:auto}
 #scheda .nome{font-size:24px;font-weight:700;line-height:1.15}
 #scheda .sci{font-family:var(--serif);font-style:italic;color:var(--piuma);font-size:17px;margin-top:2px}
@@ -130,7 +130,7 @@ body.con-spettro #avvio{padding-bottom:200px}
 @media (max-width:720px){
   #scheda{top:auto;bottom:0;left:0;right:0;width:auto;border-radius:16px 16px 0 0;max-height:46%;padding:16px}
   #altri,#legenda,#crediti{display:none}
-  #spettro{left:8px;right:8px;top:104px;bottom:auto;height:190px}
+  #spettro{left:8px;right:8px;top:126px;bottom:auto;height:190px}
   #sp-info,#sp-leg{display:none}
   body.con-spettro #avvio{padding-bottom:0}
   .crediti-mobile{display:block;margin-top:10px;font-size:11px;line-height:1.5;color:var(--piuma)}
@@ -532,7 +532,7 @@ function preparaFile(){
   audioEl.addEventListener('loadedmetadata',aggiornaTempo);
   audioEl.addEventListener('play',()=>{$('b-play').textContent='Pausa';});
   audioEl.addEventListener('pause',()=>{$('b-play').textContent='Ascolta';});
-  audioEl.addEventListener('ended',()=>{$('b-play').textContent='Ascolta di nuovo';});
+  audioEl.addEventListener('ended',()=>{$('b-play').textContent='Ascolta di nuovo';giraFineCanto();});
   audioEl.addEventListener('error',ripiegoSenzaAnalisi,{once:true});
   ensureAudio();
   mediaSrc=actx.createMediaElementSource(audioEl);
@@ -642,11 +642,25 @@ function harmonicScore(hz,domHz){
 const clock=new THREE.Clock();
 let sT=0;
 let ruota=!matchMedia('(prefers-reduced-motion: reduce)').matches;
-ctrl.addEventListener('start',()=>{ruota=false;});   // trascinando la scena si ferma la rotazione automatica
+let trascina=false;
+ctrl.addEventListener('start',()=>{ruota=false;trascina=true;});   // trascinando la scena si ferma la rotazione automatica
+ctrl.addEventListener('end',()=>{trascina=false;});
+/* a fine canto la scena gira di 90 gradi attorno all'asse verticale: si vede il canto dall'altra prospettiva */
+let giro=null;                                      // {da, t} mentre la rotazione di fine canto e' in corso
+const DURATA_GIRO=2.5;                              // secondi
+function giraFineCanto(){
+  if(trascina||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  giro={da:grp.rotation.y,t:0};
+}
 function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),0.1);
-  if(ruota)grp.rotation.y+=0.00022;
+  if(giro){                                         // rotazione morbida (accelera e rallenta) di fine canto
+    giro.t=Math.min(1,giro.t+dt/DURATA_GIRO);
+    const k=giro.t<.5?2*giro.t*giro.t:1-Math.pow(-2*giro.t+2,2)/2;
+    grp.rotation.y=giro.da+k*Math.PI/2;
+    if(giro.t>=1||trascina)giro=null;
+  }else if(ruota)grp.rotation.y+=0.00022;
   ctrl.update();
   sT+=dt;if(sT>=SRATE){sampleFFT();sT=0;}
   const fermo=modo==='file'&&audioEl&&audioEl.paused;   // in pausa i punti non invecchiano
