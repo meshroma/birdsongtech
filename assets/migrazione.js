@@ -40,6 +40,12 @@
       .migra .barra{position:absolute;left:14px;right:14px;bottom:10px;height:3px;background:rgba(255,255,255,.12);border-radius:2px}
       .migra .barra i{display:block;height:100%;width:0;background:var(--arancio,#f87e2e);border-radius:2px}
       .migra .descr{margin:0;font-size:14px;line-height:1.55;color:#d9dddb}
+      .migra .leg{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:13.5px;color:#d9dddb}
+      .migra .leg li{display:flex;align-items:center;gap:9px}
+      .migra .leg i{flex:none;width:9px;height:9px;border-radius:50%}
+      .migra .leg .viaggio{background:#ffd2a8}
+      .migra .leg .arrivo{background:#ffa25e;opacity:.75}
+      .migra .leg .tf{border:1.5px solid #fff;width:8px;height:8px}
       .migra .crediti{margin:auto 0 0;font-size:11.5px;line-height:1.5;color:var(--piuma,#8f989f)}
       .migra .crediti a{color:var(--piuma,#8f989f)}
       .migra .riga-btn{display:flex;gap:8px}
@@ -51,6 +57,7 @@
         .migra h2{font-size:17px}
         .migra .riga-btn{padding:10px 14px 0}
         .migra .descr{padding:8px 14px 0;font-size:13.5px}
+        .migra .leg{padding:8px 14px 0;font-size:13px}
         .migra .crediti{padding:8px 14px 14px;margin:0}
       }`;
     document.head.appendChild(st);
@@ -65,7 +72,13 @@
           <div class="testa"><h2 id="migra-t"></h2><button type="button" class="chiudi" aria-label="Chiudi">×</button></div>
           <div class="riga-btn"><button type="button" class="btn piccolo" data-az="rivedi">Rivedi</button>
             <button type="button" class="btn secondario piccolo" data-az="pausa">Pausa</button></div>
-          <p class="descr"></p><p class="crediti"></p>
+          <p class="descr"></p>
+          <ul class="leg">
+            <li><i class="viaggio"></i>Punto chiaro: in viaggio</li>
+            <li><i class="arrivo"></i>Punto arancio: arrivata ai quartieri d'inverno</li>
+            <li><i class="tf"></i>Cerchio bianco: Torre Flavia</li>
+          </ul>
+          <p class="crediti"></p>
         </div>
       </div>`;
     document.body.appendChild(dlg);
@@ -83,7 +96,7 @@
     if (!info) return;
     crea();
     dlg.querySelector('#migra-t').innerHTML = `Migrazione d'${info.stagione === 'autunno' ? 'autunno' : info.stagione}: ${info.nome}<small>${info.sci}</small>`;
-    dlg.querySelector('.descr').textContent = `${info.descrizione} ${info.individui} viaggi registrati fra il ${info.anni[0]} e il ${info.anni[1]}, mostrati tutti insieme sullo stesso calendario. Punto chiaro: in viaggio; punto arancio: arrivata ai quartieri d'inverno; cerchio bianco: Torre Flavia.`;
+    dlg.querySelector('.descr').textContent = `${info.descrizione} ${info.individui} viaggi registrati fra il ${info.anni[0]} e il ${info.anni[1]}, mostrati tutti insieme sullo stesso calendario.`;
     dlg.querySelector('.crediti').innerHTML = `Dati: ${info.crediti} <a href="${info.doi}" target="_blank" rel="noopener">${info.doi.replace('https://', '')}</a>` +
       (info.licenza ? `, licenza <a href="${info.licenza_url}" target="_blank" rel="noopener">${info.licenza}</a>` : '') +
       (info.modifiche ? `. Elaborazione birdsongtech: ${info.modifiche}` : '') + '. Mappa: Natural Earth (pubblico dominio).';
